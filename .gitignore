@@ -1,0 +1,15 @@
+# Build artifacts
+/grokbotd
+/dist/
+/bin/
+*.zip
+
+# Local state / secrets (never commit)
+*.credentials.json
+credentials.json
+machine.json
+local-exec-*.json
+
+# Editor / OS
+.DS_Store
+*.swp
