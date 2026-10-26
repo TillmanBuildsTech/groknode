@@ -62,6 +62,35 @@ exec sudo -E -u "$svc_user" "$bin_dst" "\$@"
 EOF
 chmod 0755 "$ctl_dst"
 
+# 6. Shared-library preflight. Electron links GTK/X11/NSS at load even in
+# run_as_node mode; a slim server/LXC may lack them. No display server needed.
+preflight_libs() {
+  command -v ldconfig >/dev/null 2>&1 || return 0
+  local needed=(libgtk-3.so.0 libnss3.so libatk-1.0.so.0 libatk-bridge-2.0.so.0 \
+    libgbm.so.1 libasound.so.2 libxkbcommon.so.0 libdrm.so.2 libcups.so.2 \
+    libatspi.so.0 libpango-1.0.so.0 libcairo.so.2)
+  local missing=()
+  local cache; cache="$(ldconfig -p 2>/dev/null)"
+  for lib in "${needed[@]}"; do
+    grep -q "$lib" <<<"$cache" || missing+=("$lib")
+  done
+  if ((${#missing[@]})); then
+    echo
+    echo "WARNING: Electron runtime libraries not found on this host:"
+    printf '  %s\n' "${missing[@]}"
+    echo "Install them (no display server/Xvfb required, just the libraries):"
+    echo "  Debian/Ubuntu: sudo apt-get install -y libgtk-3-0 libnss3 libatk1.0-0 \\"
+    echo "                   libatk-bridge2.0-0 libgbm1 libasound2 libxkbcommon0 libdrm2 \\"
+    echo "                   libcups2 libatspi2.0-0 libpango-1.0-0 libcairo2 libx11-6 \\"
+    echo "                   libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxfixes3"
+    echo "  Arch:          sudo pacman -S --needed gtk3 nss atk at-spi2-atk at-spi2-core \\"
+    echo "                   mesa alsa-lib libxkbcommon libdrm libcups pango cairo libx11 \\"
+    echo "                   libxcomposite libxdamage libxrandr libxtst libxfixes"
+    echo "('grokbotctl check --local' re-checks this after fetch-runtime.)"
+  fi
+}
+preflight_libs
+
 systemctl daemon-reload
 systemctl enable grokbot-node.service
 

@@ -66,7 +66,7 @@ func (c *Client) Login(ctx context.Context, out io.Writer) (Credentials, error) 
 		"redirectTarget":            {"sand"},
 		"supportsSelectedTeamLogin": {"true"},
 	}.Encode()
-	fmt.Fprintf(out, "Open this URL in any browser and complete sign-in:\n\n%s\n\nWaiting for authorization...\n", lu.String())
+	_, _ = fmt.Fprintf(out, "Open this URL in any browser and complete sign-in:\n\n%s\n\nWaiting for authorization...\n", lu.String())
 
 	poll := c.BaseURL + "/auth/poll?" + url.Values{"uuid": {uid}, "verifier": {pkce.Verifier}}.Encode()
 	delay := time.Second

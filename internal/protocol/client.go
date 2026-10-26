@@ -77,11 +77,9 @@ func (c *Client) postJSON(ctx context.Context, path string, body any, headers ht
 	if err != nil {
 		return nil, fmt.Errorf("%s: request: %w", action, err)
 	}
-	if headers != nil {
-		for k, vs := range headers {
-			for _, v := range vs {
-				req.Header.Add(k, v)
-			}
+	for k, vs := range headers {
+		for _, v := range vs {
+			req.Header.Add(k, v)
 		}
 	}
 	req.Header.Set("content-type", "application/json")
