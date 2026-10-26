@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -196,6 +197,23 @@ func cmdCheck(args []string) error {
 		report["electronRuntime"] = "MISSING: " + electronErr.Error()
 	} else {
 		report["electronRuntime"] = electron
+	}
+
+	// Shared-library preflight. The Electron binary links GTK/X11/NSS at load
+	// (even in run_as_node mode), so a slim server/LXC may be missing them.
+	diagBin := electron
+	if diagBin == "" {
+		diagBin = compat.FirstExistingElectron(wantMajor, cfg.ElectronOverride, cfg.RuntimeCacheDir)
+	}
+	if diagBin != "" {
+		if missing := compat.MissingSharedLibs(diagBin); len(missing) > 0 {
+			report["missingSharedLibs"] = missing
+			apt, pac := compat.PackageHints(missing)
+			report["installHint"] = map[string]any{
+				"debian/ubuntu": "sudo apt-get install -y " + strings.Join(apt, " "),
+				"arch":          "sudo pacman -S --needed " + strings.Join(pac, " "),
+			}
+		}
 	}
 
 	if local {
