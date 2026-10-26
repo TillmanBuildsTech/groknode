@@ -1,0 +1,44 @@
+[Unit]
+Description=Headless Grok Bot local-computer node
+Documentation=https://github.com/TillmanBuildsTech/grokbot-node
+Wants=network-online.target
+After=network-online.target
+# Refuse to start until credentials exist and the runtime is compatible.
+ConditionPathExists=/var/lib/grokbot-node/credentials.json
+
+[Service]
+Type=simple
+User=grokbot
+Group=grokbot
+EnvironmentFile=/etc/grokbot-node/environment
+# Gate on local compatibility (vendor installed, daemon entry present, a
+# matching stock Electron runtime available). Fails loudly after a Grok Bot
+# update bumps Electron until `grokbotctl fetch-runtime` is re-run.
+ExecCondition=/usr/local/bin/grokbotd check --local
+ExecStart=/usr/local/bin/grokbotd run
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=15s
+KillMode=mixed
+
+# --- Hardening ---------------------------------------------------------------
+# The local-exec daemon legitimately spawns subprocesses and does file I/O, so
+# the sandbox boundary is "its own state dir only", not a locked syscall set.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+StateDirectory=grokbot-node
+RuntimeDirectory=grokbot-node
+ReadWritePaths=/var/lib/grokbot-node /run/grokbot-node
+# Grok's tasks run under this unit; to let them touch specific project dirs,
+# add those paths to ReadWritePaths above (otherwise they are read-only/hidden).
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+LockPersonality=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+
+[Install]
+WantedBy=multi-user.target
