@@ -54,8 +54,26 @@ go build -o grokbotd ./cmd/grokbotd
 
 ## Install as a system service
 
+### Minimal install (Grok Bot already present)
+
 ```
 sudo ./scripts/install.sh            # dedicated user, hardened unit, wrapper
+```
+
+### Full install (downloads Grok Bot + all dependencies)
+
+```
+sudo ./scripts/install.sh --with-grokbot     # download & install Grok Bot + libs
+```
+
+The installer auto-detects your distro and architecture, then:
+- Downloads the appropriate Grok Bot package (.deb, .rpm, or AppImage)
+- Installs all required Electron runtime libraries (no display server needed)
+- Configures the systemd service
+
+After install, continue with:
+
+```
 grokbotctl fetch-runtime             # download matching stock Electron
 grokbotctl check --local             # verify compatibility
 grokbotctl login                     # browser-link sign-in (prints URL)
@@ -63,8 +81,12 @@ grokbotctl policy ask                # always | ask | never
 sudo systemctl start grokbot-node
 ```
 
-Prerequisite: the official Grok Bot Linux package installed on the box (provides
-the daemon). After any Grok Bot update: `grokbotctl fetch-runtime && sudo systemctl restart grokbot-node`.
+**Supported platforms:**
+- Debian/Ubuntu (x64, arm64) — `.deb` packages
+- Fedora/RHEL (x64, arm64) — `.rpm` packages  
+- Arch/CachyOS/Manjaro (x64, arm64) — AppImage
+
+After any Grok Bot update: `grokbotctl fetch-runtime && sudo systemctl restart grokbot-node`.
 
 ## Commands
 
