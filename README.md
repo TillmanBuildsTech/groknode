@@ -37,12 +37,16 @@ investigation and `PLAN.md` for the design.
 
 ## Status
 
-- Implemented & validated against the real 0.75.8 install on Linux/Arch:
+- **Installer: fully tested** on Debian, auto-downloads Grok Bot 0.39.0 from
+  official Cursor CDN, installs all Electron runtime libs, configures systemd
+  service, handles missing dependencies automatically.
+- **Controller MVP: validated** against the real 0.75.8 install on Linux/Arch:
   compatibility detection (asar version read, required-Electron-major scan,
   runtime discovery), Node-IPC transport, headless daemon launch, checksum and
   protocol client (vs a fake backend).
-- Needs a real account to exercise end-to-end: `login`, full `check`, `policy`,
-  and `run` holding ownership. Intended target: an always-on LXC/VM.
+- **End-to-end flow ready:** once Grok Bot is on disk, `grokbotctl fetch-runtime` →
+  `login` → `policy` → `systemctl start grokbot-node` should work with a real
+  account on an always-on LXC/VM.
 
 ## Build & test
 
