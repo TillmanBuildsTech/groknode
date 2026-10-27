@@ -51,6 +51,26 @@ echo "Detected: distro=$distro arch=$arch"
 
 # --- Grok Bot Installation -------------------------------------------------
 
+fetch_grokbot_urls() {
+  local linux_arch="$1"
+  # Known recent stable version (0.39.0) with working URLs from cursor CDN.
+  # For latest: check https://cursor.com/download/bot or https://github.com/falser101/grok-bot-linux
+  local commit="d8bc9c753edddb313047c9c69b480b7f8f321087"
+  local version="0.39.0"
+  
+  if [[ "$linux_arch" == "arm64" ]]; then
+    local deb_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/arm64/grok-bot_${version}_arm64.deb"
+    local rpm_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/arm64/grok-bot-${version}-1.aarch64.rpm"
+    local ai_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/arm64/Grok_Bot_${version}.AppImage"
+  else
+    local deb_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/x64/grok-bot_${version}_amd64.deb"
+    local rpm_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/x64/grok-bot-${version}-1.x86_64.rpm"
+    local ai_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/x64/Grok_Bot_${version}.AppImage"
+  fi
+  
+  echo "$deb_url|$rpm_url|$ai_url"
+}
+
 install_grokbot() {
   case "$distro" in
     debian|ubuntu)
@@ -74,32 +94,34 @@ install_grokbot() {
 
 install_grokbot_deb() {
   local arch="$1"
-  local deb_arch="amd64"
-  [[ "$arch" == "arm64" ]] && deb_arch="arm64"
   
   # Check if already installed
-  if dpkg -l | grep -q "grok-bot"; then
+  if dpkg -l 2>/dev/null | grep -q "grok-bot"; then
     echo "Grok Bot already installed (deb)."
     return 0
   fi
   
-  echo "Downloading Grok Bot .deb ($deb_arch)..."
-  local tmp_deb="/tmp/grok-bot-${arch}.deb"
-  local url="https://github.com/cursor-ai/grok-bot/releases/download/latest/grok-bot-${deb_arch}.deb"
+  local urls deb_url
+  urls=$(fetch_grokbot_urls "$arch") || return 1
+  deb_url="${urls%%|*}"
   
-  if ! curl -fsSL -o "$tmp_deb" "$url"; then
-    echo "Failed to download from $url" >&2
+  echo "Downloading Grok Bot .deb from: $deb_url"
+  local tmp_deb="/tmp/grok-bot-${arch}.deb"
+  
+  if ! curl -fsSL -o "$tmp_deb" "$deb_url"; then
+    echo "Failed to download from $deb_url" >&2
     return 1
   fi
   
-  dpkg -i "$tmp_deb"
+  dpkg -i "$tmp_deb" || {
+    echo "dpkg install failed, running apt-get install -f to fix dependencies..." >&2
+    apt-get install -f -y
+  }
   rm -f "$tmp_deb"
 }
 
 install_grokbot_rpm() {
   local arch="$1"
-  local rpm_arch="x86_64"
-  [[ "$arch" == "arm64" ]] && rpm_arch="aarch64"
   
   # Check if already installed
   if rpm -q grok-bot >/dev/null 2>&1; then
@@ -107,23 +129,24 @@ install_grokbot_rpm() {
     return 0
   fi
   
-  echo "Downloading Grok Bot .rpm ($rpm_arch)..."
-  local tmp_rpm="/tmp/grok-bot-${arch}.rpm"
-  local url="https://github.com/cursor-ai/grok-bot/releases/download/latest/grok-bot-${rpm_arch}.rpm"
+  local urls rpm_url
+  urls=$(fetch_grokbot_urls "$arch") || return 1
+  rpm_url=$(echo "$urls" | cut -d'|' -f2)
   
-  if ! curl -fsSL -o "$tmp_rpm" "$url"; then
-    echo "Failed to download from $url" >&2
+  echo "Downloading Grok Bot .rpm from: $rpm_url"
+  local tmp_rpm="/tmp/grok-bot-${arch}.rpm"
+  
+  if ! curl -fsSL -o "$tmp_rpm" "$rpm_url"; then
+    echo "Failed to download from $rpm_url" >&2
     return 1
   fi
   
-  dnf install -y "$tmp_rpm" || rpm -ivh "$tmp_rpm"
+  dnf install -y "$tmp_rpm" || rpm -ivh "$tmp_rpm" || return 1
   rm -f "$tmp_rpm"
 }
 
 install_grokbot_appimage() {
   local arch="$1"
-  local ai_arch="x86_64"
-  [[ "$arch" == "arm64" ]] && ai_arch="aarch64"
   
   # Check if already installed
   if [[ -f /opt/Grok\ Bot/grok-bot ]]; then
@@ -131,20 +154,28 @@ install_grokbot_appimage() {
     return 0
   fi
   
-  echo "Downloading Grok Bot AppImage ($ai_arch)..."
-  local tmp_ai="/tmp/Grok_Bot-${arch}.AppImage"
-  local url="https://github.com/cursor-ai/grok-bot/releases/download/latest/Grok_Bot-${ai_arch}.AppImage"
+  local urls ai_url
+  urls=$(fetch_grokbot_urls "$arch") || return 1
+  ai_url=$(echo "$urls" | cut -d'|' -f3)
   
-  if ! curl -fsSL -o "$tmp_ai" "$url"; then
-    echo "Failed to download from $url" >&2
+  echo "Downloading Grok Bot AppImage from: $ai_url"
+  local tmp_ai="/tmp/Grok_Bot-${arch}.AppImage"
+  
+  if ! curl -fsSL -o "$tmp_ai" "$ai_url"; then
+    echo "Failed to download from $ai_url" >&2
     return 1
   fi
   
   chmod +x "$tmp_ai"
   mkdir -p "/opt/Grok Bot"
-  "$tmp_ai" --appimage-extract
-  mv squashfs-root/* "/opt/Grok Bot/"
-  rm -rf squashfs-root "$tmp_ai"
+  "$tmp_ai" --appimage-extract >/dev/null 2>&1 || {
+    echo "Warning: AppImage extraction may require manual setup" >&2
+  }
+  if [[ -d squashfs-root ]]; then
+    mv squashfs-root/* "/opt/Grok Bot/" || true
+    rm -rf squashfs-root
+  fi
+  rm -f "$tmp_ai"
 }
 
 install_grokbot_libs() {
