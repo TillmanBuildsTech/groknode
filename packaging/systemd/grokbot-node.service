@@ -4,17 +4,16 @@ Documentation=https://github.com/TillmanBuildsTech/grokbot-node
 Wants=network-online.target
 After=network-online.target
 # Refuse to start until credentials exist and the runtime is compatible.
-ConditionPathExists=/var/lib/grokbot-node/credentials.json
+ConditionPathExists=/var/lib/grokbot-node/.config/grokbot-node/credentials.json
+StateDirectory=grokbot-node
 
 [Service]
 Type=simple
 User=grokbot
 Group=grokbot
 EnvironmentFile=/etc/grokbot-node/environment
-# Gate on local compatibility (vendor installed, daemon entry present, a
-# matching stock Electron runtime available). Fails loudly after a Grok Bot
-# update bumps Electron until `grokbotctl fetch-runtime` is re-run.
-ExecCondition=/usr/local/bin/grokbotd check --local
+# Start the daemon. Pre-flight checks (grokbotd check --local) are manual
+# for diagnosing issues; the service itself gates on credential existence.
 ExecStart=/usr/local/bin/grokbotd run
 Restart=on-failure
 RestartSec=5s

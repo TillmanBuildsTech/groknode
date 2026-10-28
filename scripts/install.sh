@@ -251,8 +251,8 @@ install -d -m 0700 -o "$svc_user" -g "$svc_user" "$state_dir"
 # 5. Binary + env file + unit.
 install -m 0755 "$bin_src" "$bin_dst"
 cat > "$conf_dir/environment" <<EOF
-GROKBOT_CONFIG_DIR=$state_dir
-GROKBOT_DATA_ROOT=$state_dir
+GROKBOT_CONFIG_DIR=$state_dir/.config/grokbot-node
+GROKBOT_DATA_ROOT=$state_dir/.local/share/grokbot-node
 # Override the vendor paths here if Grok Bot is installed elsewhere:
 # GROK_BOT_BINARY=/opt/Grok Bot/grok-bot
 # Pin a specific stock Electron instead of auto-detect:

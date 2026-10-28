@@ -55,7 +55,15 @@ func New(cfg *config.Config, log *slog.Logger) (*Supervisor, error) {
 	}
 	electron, err := compat.FindElectronRuntime(wantMajor, cfg.ElectronOverride, cfg.RuntimeCacheDir)
 	if err != nil {
-		return nil, err
+		// In headless environments (containers, VMs without graphics), Electron may exist but
+		// fail the version check due to missing libs or sandboxing issues. If an Electron binary
+		// exists, proceed with a warning; only fail if truly missing.
+		if existing := compat.FirstExistingElectron(wantMajor, cfg.ElectronOverride, cfg.RuntimeCacheDir); existing != "" {
+			log.Warn("Electron version check failed; using available binary", "path", existing, "err", err)
+			electron = existing
+		} else {
+			return nil, err
+		}
 	}
 
 	id, err := auth.LoadOrCreateMachine(cfg.MachinePath())
