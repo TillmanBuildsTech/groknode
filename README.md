@@ -47,6 +47,11 @@ investigation and `PLAN.md` for the design.
 - **End-to-end flow ready:** once Grok Bot is on disk, `groknode fetch-runtime` →
   `login` → `policy` → `systemctl start grokbot-node` should work with a real
   account on an always-on LXC/VM.
+- **Drift watch:** a nightly GitHub Actions job (`.github/workflows/nightly.yml`)
+  downloads the current stable Grok Bot and verifies the assumptions groknode
+  relies on — package layout, the in-asar daemon entry, the embedded Electron
+  version, and that a matching stock Electron is still published. If Cursor
+  ships a breaking change, it opens a tracking issue before users hit it.
 
 ## Build & test
 

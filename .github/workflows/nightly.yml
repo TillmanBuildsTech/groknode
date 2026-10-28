@@ -1,0 +1,83 @@
+name: Nightly compat check
+
+# Downloads the LATEST stable Grok Bot from Cursor's official feed and verifies
+# the structural assumptions groknode depends on (package layout, asar daemon
+# entry, embedded Electron version, and that a matching stock Electron is still
+# published). Catches breaking changes shipped by Cursor before users hit them.
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # 07:00 UTC daily (~midnight America/Denver)
+  workflow_dispatch: {}    # allow manual runs from the Actions tab
+
+permissions:
+  contents: read
+  issues: write            # open/update an issue when the check fails
+
+jobs:
+  latest-grok-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Resolve + download latest Grok Bot (.deb, linux-x64)
+        run: |
+          set -euo pipefail
+          feed="https://api2.cursor.sh/updates/api/download/stable/linux-x64/sand"
+          json="$(curl -fsSL "$feed")"
+          get() { printf '%s' "$json" | grep -oE "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -n1 | sed -E 's/.*"([^"]*)"$/\1/'; }
+          ver="$(get version)"; deb="$(get debUrl)"; sha="$(get commitSha)"
+          if [ -z "$deb" ] || [ -z "$ver" ]; then
+            echo "::error::release feed missing expected fields (debUrl/version)"
+            echo "$json"
+            exit 1
+          fi
+          echo "Resolved Grok Bot v$ver (commit ${sha:0:12})"
+          echo "### Grok Bot \`$ver\` (commit \`${sha:0:12}\`)" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsSL -o grok-bot.deb "$deb"
+          mkdir -p extracted
+          dpkg-deb -x grok-bot.deb extracted
+          test -f "extracted/opt/Grok Bot/grok-bot"
+          test -f "extracted/opt/Grok Bot/resources/app.asar"
+
+      - name: Verify package structure + Electron availability
+        env:
+          GROK_BOT_BINARY: ${{ github.workspace }}/extracted/opt/Grok Bot/grok-bot
+          GROK_BOT_ASAR: ${{ github.workspace }}/extracted/opt/Grok Bot/resources/app.asar
+        run: go test -tags=nightly -run TestLatestPackageStructure -v ./internal/compat/
+
+      - name: Open or update tracking issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const title = "⚠️ Nightly compat check failing against latest Grok Bot";
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const note = [
+              "The nightly check against the **latest** Grok Bot release failed.",
+              "",
+              "Likely causes (something Cursor changed):",
+              "- package layout moved (`/opt/Grok Bot/grok-bot` or `resources/app.asar`)",
+              "- the daemon entry `dist/local-exec-daemon/main.cjs` moved/renamed inside the asar",
+              "- the embedded `Electron/x.y.z` version string changed shape (byte-scan miss)",
+              "- the required stock Electron version is no longer published upstream",
+              "- the release feed or download URL schema changed",
+              "",
+              `Failed run: ${runUrl}`,
+              "",
+              "Reproduce locally: download + `dpkg-deb -x` the latest `.deb`, then",
+              "`GROK_BOT_BINARY=... GROK_BOT_ASAR=... go test -tags=nightly -run TestLatestPackageStructure -v ./internal/compat/`",
+            ].join("\n");
+            const open = await github.rest.issues.listForRepo({ owner, repo, state: "open", per_page: 100 });
+            const existing = open.data.find(i => i.title === title && !i.pull_request);
+            if (existing) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: `Still failing. ${runUrl}` });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body: note });
+            }
