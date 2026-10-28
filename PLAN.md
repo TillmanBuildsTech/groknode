@@ -1,6 +1,6 @@
 # groknode — headless Grok Bot local-computer node (Go)
 
-A single-binary Go rewrite of the `grokbot-headless` management layer, designed to
+A single-binary Go rewrite of the local-computer management layer, designed to
 run the official Grok Bot local-execution daemon on an always-on Linux box with no
 system Node.js, no desktop/Electron app integration, and the proprietary runtime
 isolated inside a container sandbox.
@@ -13,7 +13,7 @@ server** where we avoid installing the full desktop package; service runs under 
 
 ## 1. What this is (and the hard constraints)
 
-`grokbot-headless` is not Grok. It is a ~450-line Node supervisor around xAI's
+The local-exec daemon is not Grok. It is a proprietary Node supervisor around xAI's
 **proprietary** local-exec daemon (internally Cursor's "local computer" tech:
 endpoints are `api2.cursor.sh`, headers are `x-cursor-*`, RPC services are
 `aiserver.v1.GrokBotService` / `DashboardService`). The daemon ships closed-source
@@ -353,5 +353,5 @@ that delivers the "clean host" goal.
 
 ## 12. Legal / ToS
 Independent, unofficial, uses an undocumented internal protocol; an official update
-can break it (same caveat as grokbot-headless). No proprietary code redistributed.
+can break it. No proprietary code redistributed.
 MIT, consistent with the upstream project we're reimplementing the open layer of.

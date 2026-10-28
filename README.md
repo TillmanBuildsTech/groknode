@@ -5,9 +5,8 @@ daemon headlessly on an always-on Linux box — so the capability keeps working
 when your desktop is off. It is an independent, unofficial management layer; it
 ships no proprietary code and drives xAI's own daemon over its internal protocol.
 
-A native rewrite of the idea behind
-[`grokbot-headless`](https://github.com/andreanjos/grokbot-headless), with one
-essential change forced by current Grok Bot builds (see below).
+A native Go implementation of a local-computer controller with support for
+current Grok Bot builds (see below).
 
 ## How it works
 
