@@ -263,12 +263,19 @@ chown root:"$svc_user" "$conf_dir/environment"
 install -m 0644 "$repo_dir/packaging/systemd/grokbot-node.service" "$unit_dst"
 
 # 6. Admin wrapper so you can run CLI commands as the service user with its env.
-cat > "$ctl_dst" <<EOF
+cat > "$ctl_dst" <<'WRAPPER_EOF'
 #!/usr/bin/env bash
 # Run grokbotd as the service user with the service environment.
-set -a; . "$conf_dir/environment"; set +a
-exec sudo -E -u "$svc_user" "$bin_dst" "\$@"
-EOF
+set -a; . /etc/grokbot-node/environment; set +a
+if [[ $EUID -eq 0 ]]; then
+  # Already root: run as the service user with environment
+  export HOME=/var/lib/grokbot-node
+  exec su -s /bin/bash - grokbot -c "/usr/local/bin/grokbotd $(printf '%q ' "$@")"
+else
+  # Not root: escalate with sudo
+  exec sudo -E -u grokbot /usr/local/bin/grokbotd "$@"
+fi
+WRAPPER_EOF
 chmod 0755 "$ctl_dst"
 
 # 7. Shared-library preflight. Electron links GTK/X11/NSS at load even in
