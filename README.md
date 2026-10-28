@@ -37,9 +37,9 @@ investigation and `PLAN.md` for the design.
 
 ## Status
 
-- **Installer: fully tested** on Debian, auto-downloads Grok Bot 0.39.0 from
-  official Cursor CDN, installs all Electron runtime libs, configures systemd
-  service, handles missing dependencies automatically.
+- **Installer: fully tested** on Debian, auto-downloads the latest stable Grok
+  Bot from Cursor's official update feed, installs all Electron runtime libs,
+  configures systemd service, handles missing dependencies automatically.
 - **Controller MVP: validated** against the real 0.75.8 install on Linux/Arch:
   compatibility detection (asar version read, required-Electron-major scan,
   runtime discovery), Node-IPC transport, headless daemon launch, checksum and
@@ -71,7 +71,8 @@ sudo ./scripts/install.sh --with-grokbot     # download & install Grok Bot + lib
 ```
 
 The installer auto-detects your distro and architecture, then:
-- Downloads the appropriate Grok Bot package (.deb, .rpm, or AppImage)
+- Resolves the latest stable release from Cursor's update feed and downloads the
+  appropriate Grok Bot package (.deb, .rpm, or AppImage)
 - Installs all required Electron runtime libraries (no display server needed)
 - Configures the systemd service
 
