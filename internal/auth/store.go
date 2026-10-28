@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/TillmanBuildsTech/grokbot-node/internal/state"
+	"github.com/TillmanBuildsTech/groknode/internal/state"
 )
 
 // Credentials is the persisted account OAuth state.

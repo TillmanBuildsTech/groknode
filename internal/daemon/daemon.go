@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/TillmanBuildsTech/grokbot-node/internal/ipc"
+	"github.com/TillmanBuildsTech/groknode/internal/ipc"
 )
 
 // Options configures a daemon launch.

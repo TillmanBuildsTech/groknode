@@ -11,12 +11,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/TillmanBuildsTech/grokbot-node/internal/auth"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/compat"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/config"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/daemon"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/protocol"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/state"
+	"github.com/TillmanBuildsTech/groknode/internal/auth"
+	"github.com/TillmanBuildsTech/groknode/internal/compat"
+	"github.com/TillmanBuildsTech/groknode/internal/config"
+	"github.com/TillmanBuildsTech/groknode/internal/daemon"
+	"github.com/TillmanBuildsTech/groknode/internal/protocol"
+	"github.com/TillmanBuildsTech/groknode/internal/state"
 )
 
 const (

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install grokbot-node as a hardened system service with a dedicated user.
+# Install groknode as a hardened system service with a dedicated user.
 # Optionally downloads and installs the Grok Bot package + shared libraries.
 # Usage: sudo ./scripts/install.sh [--with-grokbot] [path-to-grokbotd-binary]
 set -euo pipefail
@@ -13,10 +13,10 @@ repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 bin_src="${1:-}"
 with_grokbot=0
 svc_user="grokbot"
-state_dir="/var/lib/grokbot-node"
-conf_dir="/etc/grokbot-node"
-unit_dst="/etc/systemd/system/grokbot-node.service"
-libexec_dir="/usr/local/libexec/grokbot-node"
+state_dir="/var/lib/groknode"
+conf_dir="/etc/groknode"
+unit_dst="/etc/systemd/system/groknode.service"
+libexec_dir="/usr/local/libexec/groknode"
 bin_dst="$libexec_dir/groknode"     # daemon binary, OFF $PATH (systemd calls it directly)
 cli_dst="/usr/local/bin/groknode"   # the one command users type
 
@@ -277,8 +277,8 @@ rm -f /usr/local/bin/grokbotd /usr/local/bin/grokbotctl
 install -d -m 0755 "$libexec_dir"
 install -m 0755 "$bin_src" "$bin_dst"
 cat > "$conf_dir/environment" <<EOF
-GROKBOT_CONFIG_DIR=$state_dir/.config/grokbot-node
-GROKBOT_DATA_ROOT=$state_dir/.local/share/grokbot-node
+GROKBOT_CONFIG_DIR=$state_dir/.config/groknode
+GROKBOT_DATA_ROOT=$state_dir/.local/share/groknode
 # Override the vendor paths here if Grok Bot is installed elsewhere:
 # GROK_BOT_BINARY=/opt/Grok Bot/grok-bot
 # Pin a specific stock Electron instead of auto-detect:
@@ -286,21 +286,21 @@ GROKBOT_DATA_ROOT=$state_dir/.local/share/grokbot-node
 EOF
 chmod 0640 "$conf_dir/environment"
 chown root:"$svc_user" "$conf_dir/environment"
-install -m 0644 "$repo_dir/packaging/systemd/grokbot-node.service" "$unit_dst"
+install -m 0644 "$repo_dir/packaging/systemd/groknode.service" "$unit_dst"
 
 # 6. The single user-facing command. Runs the daemon binary as the service
 # user with the service environment, so state lands in the grokbot-owned dirs.
 cat > "$cli_dst" <<'WRAPPER_EOF'
 #!/usr/bin/env bash
 # groknode: manage the headless Grok Bot node (runs as the service user).
-set -a; . /etc/grokbot-node/environment; set +a
+set -a; . /etc/groknode/environment; set +a
 if [[ $EUID -eq 0 ]]; then
   # Already root: run as the service user with environment
-  export HOME=/var/lib/grokbot-node
-  exec su -s /bin/bash - grokbot -c "/usr/local/libexec/grokbot-node/groknode $(printf '%q ' "$@")"
+  export HOME=/var/lib/groknode
+  exec su -s /bin/bash - grokbot -c "/usr/local/libexec/groknode/groknode $(printf '%q ' "$@")"
 else
   # Not root: escalate with sudo
-  exec sudo -E -u grokbot /usr/local/libexec/grokbot-node/groknode "$@"
+  exec sudo -E -u grokbot /usr/local/libexec/groknode/groknode "$@"
 fi
 WRAPPER_EOF
 chmod 0755 "$cli_dst"
@@ -335,11 +335,11 @@ preflight_libs() {
 preflight_libs
 
 systemctl daemon-reload
-systemctl enable grokbot-node.service
+systemctl enable groknode.service
 
 cat <<EOF
 
-Installed grokbot-node.
+Installed groknode.
 
 Next steps (run on this box):
   1. Verify Grok Bot is installed and available.
@@ -347,7 +347,7 @@ Next steps (run on this box):
   3. groknode check --local     # verify compatibility
   4. groknode login             # browser-link sign-in (prints a URL)
   5. groknode policy ask        # or: always | never
-  6. systemctl start grokbot-node
+  6. systemctl start groknode
 
-After any Grok Bot update, re-run:  groknode fetch-runtime && systemctl restart grokbot-node
+After any Grok Bot update, re-run:  groknode fetch-runtime && systemctl restart groknode
 EOF

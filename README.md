@@ -1,4 +1,4 @@
-# grokbot-node
+# groknode
 
 A single-binary Go controller that runs the official Grok Bot local-computer
 daemon headlessly on an always-on Linux box — so the capability keeps working
@@ -45,7 +45,7 @@ investigation and `PLAN.md` for the design.
   runtime discovery), Node-IPC transport, headless daemon launch, checksum and
   protocol client (vs a fake backend).
 - **End-to-end flow ready:** once Grok Bot is on disk, `groknode fetch-runtime` →
-  `login` → `policy` → `systemctl start grokbot-node` should work with a real
+  `login` → `policy` → `systemctl start groknode` should work with a real
   account on an always-on LXC/VM.
 - **Drift watch:** a nightly GitHub Actions job (`.github/workflows/nightly.yml`)
   downloads the current stable Grok Bot and verifies the assumptions groknode
@@ -83,7 +83,7 @@ The installer auto-detects your distro and architecture, then:
 
 The installer puts a single command on your `$PATH` — **`groknode`** — which
 runs everything as the dedicated service user with the right environment. (The
-daemon binary itself lives in `/usr/local/libexec/grokbot-node/` and is invoked
+daemon binary itself lives in `/usr/local/libexec/groknode/` and is invoked
 only by systemd; you never call it directly. The vendor's own `grok-bot` binary
 is separate and unrelated to this project.)
 
@@ -94,7 +94,7 @@ groknode fetch-runtime               # download matching stock Electron
 groknode check --local               # verify compatibility
 groknode login                       # browser-link sign-in (prints URL)
 groknode policy ask                  # always | ask | never
-sudo systemctl start grokbot-node
+sudo systemctl start groknode
 ```
 
 **Supported platforms:**
@@ -102,7 +102,7 @@ sudo systemctl start grokbot-node
 - Fedora/RHEL (x64, arm64) — `.rpm` packages  
 - Arch/CachyOS/Manjaro (x64, arm64) — AppImage
 
-After any Grok Bot update: `groknode fetch-runtime && sudo systemctl restart grokbot-node`.
+After any Grok Bot update: `groknode fetch-runtime && sudo systemctl restart groknode`.
 
 ## Commands
 

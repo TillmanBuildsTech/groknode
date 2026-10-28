@@ -1,20 +1,20 @@
 [Unit]
 Description=Headless Grok Bot local-computer node
-Documentation=https://github.com/TillmanBuildsTech/grokbot-node
+Documentation=https://github.com/TillmanBuildsTech/groknode
 Wants=network-online.target
 After=network-online.target
 # Refuse to start until credentials exist and the runtime is compatible.
-ConditionPathExists=/var/lib/grokbot-node/.config/grokbot-node/credentials.json
-StateDirectory=grokbot-node
+ConditionPathExists=/var/lib/groknode/.config/groknode/credentials.json
+StateDirectory=groknode
 
 [Service]
 Type=simple
 User=grokbot
 Group=grokbot
-EnvironmentFile=/etc/grokbot-node/environment
+EnvironmentFile=/etc/groknode/environment
 # Start the daemon. Pre-flight checks (groknode check --local) are manual
 # for diagnosing issues; the service itself gates on credential existence.
-ExecStart=/usr/local/libexec/grokbot-node/groknode run
+ExecStart=/usr/local/libexec/groknode/groknode run
 Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=15s
@@ -27,9 +27,9 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
-StateDirectory=grokbot-node
-RuntimeDirectory=grokbot-node
-ReadWritePaths=/var/lib/grokbot-node /run/grokbot-node
+StateDirectory=groknode
+RuntimeDirectory=groknode
+ReadWritePaths=/var/lib/groknode /run/groknode
 # Grok's tasks run under this unit; to let them touch specific project dirs,
 # add those paths to ReadWritePaths above (otherwise they are read-only/hidden).
 CapabilityBoundingSet=
