@@ -13,13 +13,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/TillmanBuildsTech/grokbot-node/internal/auth"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/compat"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/config"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/ipc"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/protocol"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/state"
-	"github.com/TillmanBuildsTech/grokbot-node/internal/supervisor"
+	"github.com/TillmanBuildsTech/groknode/internal/auth"
+	"github.com/TillmanBuildsTech/groknode/internal/compat"
+	"github.com/TillmanBuildsTech/groknode/internal/config"
+	"github.com/TillmanBuildsTech/groknode/internal/ipc"
+	"github.com/TillmanBuildsTech/groknode/internal/protocol"
+	"github.com/TillmanBuildsTech/groknode/internal/state"
+	"github.com/TillmanBuildsTech/groknode/internal/supervisor"
 )
 
 func main() {

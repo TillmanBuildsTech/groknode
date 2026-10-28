@@ -1,4 +1,4 @@
-# grokbot-node — headless Grok Bot local-computer node (Go)
+# groknode — headless Grok Bot local-computer node (Go)
 
 A single-binary Go rewrite of the `grokbot-headless` management layer, designed to
 run the official Grok Bot local-execution daemon on an always-on Linux box with no
@@ -58,10 +58,10 @@ Four constraints that shape the whole design:
 
 ```
   Host (CachyOS / any distro, clean)
-  └─ systemd system unit  grokbot-node.service   (User=grokbot, hardened)
+  └─ systemd system unit  groknode.service   (User=grokbot, hardened)
        └─ podman/quadlet (or barge) runs ONE container:
             ┌─────────────────────────────────────────────┐
-            │ container image: grokbot-node                │
+            │ container image: groknode                │
             │                                              │
             │  PID 1: groknode  (our Go binary)            │
             │     │  socketpair(AF_UNIX,SOCK_STREAM)        │
@@ -74,7 +74,7 @@ Four constraints that shape the whole design:
             │  + GTK/X11/NSS libs (bundled in image)       │
             └─────────────────────────────────────────────┘
                  │ outbound HTTPS → api2.cursor.sh
-                 │ volumes: /var/lib/grokbot-node (creds/state)
+                 │ volumes: /var/lib/groknode (creds/state)
                  │ optional bind-mounts: project dirs Grok may touch
 ```
 
@@ -102,7 +102,7 @@ launch wrapper and file paths differ, selected by config.
 ## 3. Project layout
 
 ```
-grokbot-proxy/                      (repo root; module github.com/TillmanBuildsTech/grokbot-node)
+groknode/                           (repo root; module github.com/TillmanBuildsTech/groknode)
   cmd/groknode/main.go              CLI entrypoint (cobra): login run status check policy logout
   internal/config/                  env + file config, path resolution (system vs user vs container)
   internal/auth/                    PKCE, OAuth token+refresh, JWT payload decode, credential store
@@ -114,9 +114,9 @@ grokbot-proxy/                      (repo root; module github.com/TillmanBuildsT
   internal/compat/                  installed-version probe (asar read or electron -e), tested pins
   packaging/
     Containerfile                   builds image from user-supplied package dir
-    systemd/grokbot-node.service    system unit (host→container launcher)
+    systemd/groknode.service    system unit (host→container launcher)
     systemd/groknode.service        system unit (topology B, host-native)
-    quadlet/grokbot-node.container  podman quadlet
+    quadlet/groknode.container  podman quadlet
   test/
     fakebackend/                    httptest server mimicking api2.cursor.sh + oauth + RPC
     fakedaemon/                     tiny node/go stub that speaks Node IPC, asserts bootstrap msg
@@ -142,9 +142,9 @@ Improvements over the Node version:
   handshake succeeds against the real daemon for N seconds then exits? cloud reachable?
 - Exponential backoff + crash-loop detection on daemon restart (Node version is a
   flat 5s). Trip to a cooldown + loud log after K failures in a window.
-- Optional local status socket (unix socket `/run/grokbot-node/status.sock`) so the
+- Optional local status socket (unix socket `/run/groknode/status.sock`) so the
   host can query health without parsing files.
-- Config file (`/etc/grokbot-node/config.toml`) in addition to env, so the systemd
+- Config file (`/etc/groknode/config.toml`) in addition to env, so the systemd
   unit stays clean.
 
 ---
@@ -153,10 +153,10 @@ Improvements over the Node version:
 
 ### 5.1 Config & paths (system-service model)
 Dedicated user `grokbot`. Paths relocated off `$HOME`:
-- config:  `/etc/grokbot-node/` (config.toml, 0750 root:grokbot)
-- state:   `/var/lib/grokbot-node/` (0700 grokbot:grokbot) — credentials.json,
+- config:  `/etc/groknode/` (config.toml, 0750 root:grokbot)
+- state:   `/var/lib/groknode/` (0700 grokbot:grokbot) — credentials.json,
   machine.json, local-exec-daemon-credential.json, heartbeat, discovery, settings.
-- runtime: `/run/grokbot-node/` (status socket)
+- runtime: `/run/groknode/` (status socket)
 - In the container these map to a single mounted volume.
 All secret files written atomically at 0600 (temp + rename), mirroring the Node
 `atomicJson`. Overridable via env (`SAND_DATA_ROOT`, `GROK_BOT_HEADLESS_CONFIG_DIR`,
@@ -269,9 +269,9 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
-ReadWritePaths=/var/lib/grokbot-node /run/grokbot-node
-StateDirectory=grokbot-node
-RuntimeDirectory=grokbot-node
+ReadWritePaths=/var/lib/groknode /run/groknode
+StateDirectory=groknode
+RuntimeDirectory=groknode
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 CapabilityBoundingSet=
 SystemCallFilter=@system-service

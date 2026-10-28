@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/TillmanBuildsTech/grokbot-node/internal/auth"
+	"github.com/TillmanBuildsTech/groknode/internal/auth"
 )
 
 // Credentials aliases the canonical auth.Credentials type.

@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/TillmanBuildsTech/grokbot-node/internal/auth"
+	"github.com/TillmanBuildsTech/groknode/internal/auth"
 )
 
 const (

@@ -50,11 +50,11 @@ func Load() (*Config, error) {
 
 	cfgDir := env("GROKBOT_CONFIG_DIR", "GROK_BOT_HEADLESS_CONFIG_DIR")
 	if cfgDir == "" {
-		cfgDir = filepath.Join(home, ".config", "grokbot-node")
+		cfgDir = filepath.Join(home, ".config", "groknode")
 	}
 	dataRoot := env("GROKBOT_DATA_ROOT", "SAND_DATA_ROOT")
 	if dataRoot == "" {
-		dataRoot = filepath.Join(home, ".local", "share", "grokbot-node")
+		dataRoot = filepath.Join(home, ".local", "share", "groknode")
 	}
 
 	daemon := env("GROK_BOT_DAEMON_SCRIPT")
