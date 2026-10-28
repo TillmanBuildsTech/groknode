@@ -63,7 +63,7 @@ Four constraints that shape the whole design:
             ┌─────────────────────────────────────────────┐
             │ container image: grokbot-node                │
             │                                              │
-            │  PID 1: grokbotd  (our Go binary)            │
+            │  PID 1: groknode  (our Go binary)            │
             │     │  socketpair(AF_UNIX,SOCK_STREAM)        │
             │     │  NODE_CHANNEL_FD=3, _SERIALIZATION=json │
             │     ▼                                          │
@@ -89,7 +89,7 @@ Why container-first:
 
 ### Fallback topology B — host-native minimal extract
 For when containers aren't wanted: extract the package to `/opt/grokbot-runtime`,
-install the GTK/X11/NSS libs via the host package manager, run `grokbotd` directly
+install the GTK/X11/NSS libs via the host package manager, run `groknode` directly
 under the dedicated `grokbot` user via the systemd unit in §6. More host pollution,
 distro-specific lib names (the Arch equivalents differ from the Debian `libgtk-3-0t64`
 etc.), weaker sandbox. Supported but not recommended.
@@ -103,7 +103,7 @@ launch wrapper and file paths differ, selected by config.
 
 ```
 grokbot-proxy/                      (repo root; module github.com/TillmanBuildsTech/grokbot-node)
-  cmd/grokbotd/main.go              CLI entrypoint (cobra): login run status check policy logout
+  cmd/groknode/main.go              CLI entrypoint (cobra): login run status check policy logout
   internal/config/                  env + file config, path resolution (system vs user vs container)
   internal/auth/                    PKCE, OAuth token+refresh, JWT payload decode, credential store
   internal/protocol/                checksum, headers, Connect RPC unary client, descriptor mint
@@ -115,7 +115,7 @@ grokbot-proxy/                      (repo root; module github.com/TillmanBuildsT
   packaging/
     Containerfile                   builds image from user-supplied package dir
     systemd/grokbot-node.service    system unit (host→container launcher)
-    systemd/grokbotd.service        system unit (topology B, host-native)
+    systemd/groknode.service        system unit (topology B, host-native)
     quadlet/grokbot-node.container  podman quadlet
   test/
     fakebackend/                    httptest server mimicking api2.cursor.sh + oauth + RPC
@@ -129,16 +129,16 @@ grokbot-proxy/                      (repo root; module github.com/TillmanBuildsT
 
 Keep the original verbs so muscle memory and docs transfer:
 
-- `grokbotd login`   — print browser-link URL, poll `/auth/poll`, store creds.
-- `grokbotd run`     — the supervisor (PID 1 in container / ExecStart in topology B).
-- `grokbotd status`  — JSON: label, machineId, daemon pid/alive, policy, cred expiry.
-- `grokbotd check [--local]` — compatibility probe; `--local` skips cloud auth.
-- `grokbotd policy <always|ask|never>` — register machine + set local tool permission.
-- `grokbotd logout`  — stop service, assert daemon dead, wipe creds/state.
+- `groknode login`   — print browser-link URL, poll `/auth/poll`, store creds.
+- `groknode run`     — the supervisor (PID 1 in container / ExecStart in topology B).
+- `groknode status`  — JSON: label, machineId, daemon pid/alive, policy, cred expiry.
+- `groknode check [--local]` — compatibility probe; `--local` skips cloud auth.
+- `groknode policy <always|ask|never>` — register machine + set local tool permission.
+- `groknode logout`  — stop service, assert daemon dead, wipe creds/state.
 
 Improvements over the Node version:
 - `--json`/structured logging (slog) everywhere; `status` already JSON.
-- `grokbotd doctor` — one-shot: libs present? daemon entry resolvable? IPC bootstrap
+- `groknode doctor` — one-shot: libs present? daemon entry resolvable? IPC bootstrap
   handshake succeeds against the real daemon for N seconds then exits? cloud reachable?
 - Exponential backoff + crash-loop detection on daemon restart (Node version is a
   flat 5s). Trip to a cooldown + loud log after K failures in a window.
@@ -258,8 +258,8 @@ After=network-online.target
 Type=simple
 User=grokbot
 Group=grokbot
-ExecCondition=/usr/bin/grokbotd check --local
-ExecStart=/usr/bin/grokbotd run
+ExecCondition=/usr/bin/groknode check --local
+ExecStart=/usr/bin/groknode run
 Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=15s
@@ -317,12 +317,12 @@ installer test + e2e against fake backend/daemon):
 ---
 
 ## 9. Packaging & distribution
-- `grokbotd` as a single static binary (CGO_OFF) — GoReleaser for checksummed
+- `groknode` as a single static binary (CGO_OFF) — GoReleaser for checksummed
   release artifacts (matches your barge conventions).
 - `Containerfile` that takes the user's extracted package dir as build context /
-  arg, layers in the GTK/X11/NSS libs, drops in `grokbotd`, sets it as entrypoint.
+  arg, layers in the GTK/X11/NSS libs, drops in `groknode`, sets it as entrypoint.
 - Podman quadlet + system unit for host deployment; optional `barge` deploy recipe.
-- `grokbotd install` subcommand to lay down user, dirs, and unit for topology B.
+- `groknode install` subcommand to lay down user, dirs, and unit for topology B.
 
 ---
 

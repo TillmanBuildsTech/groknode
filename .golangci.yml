@@ -15,7 +15,7 @@ linters:
   exclusions:
     rules:
       # Diagnostics/probes favor fmt.Fprintf over structured handling.
-      - path: cmd/grokbotd/main.go
+      - path: cmd/groknode/main.go
         linters: [gocritic]
 
 formatters:

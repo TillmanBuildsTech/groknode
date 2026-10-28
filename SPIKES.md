@@ -9,9 +9,9 @@ Electron binary, which produce the identical wire behavior the daemon relies on.
 Run it yourself:
     go test ./...                       # all unit + spike tests
     go test -race ./...                 # concurrency check (IPC reader goroutine)
-    go build -o /tmp/grokbotd ./cmd/grokbotd
-    /tmp/grokbotd checksum my-machine-id
-    /tmp/grokbotd ipc-probe /usr/lib/electron42/electron <script.cjs> --run-as-node
+    go build -o /tmp/groknode ./cmd/groknode
+    /tmp/groknode checksum my-machine-id
+    /tmp/groknode ipc-probe /usr/lib/electron42/electron <script.cjs> --run-as-node
 
 ## S2 — Node fork() IPC from a Go (non-Node) parent  ✅ PROVEN
 Approach: `socketpair(AF_UNIX, SOCK_STREAM)`, pass the child end as fd 3 via
@@ -91,7 +91,7 @@ Stock Electron ships with `run_as_node` ENABLED. This box already has
 as the vendor's 42.11.16). Running the REAL vendor daemon under it, headless
 (DISPLAY/WAYLAND stripped), no credentials, isolated SAND_DATA_ROOT:
 
-    grokbotd daemon-probe /usr/lib/electron42/electron \
+    groknode daemon-probe /usr/lib/electron42/electron \
         "/opt/Grok Bot/resources/app.asar/dist/local-exec-daemon/main.cjs" 0.75.8 12
 
 Output:

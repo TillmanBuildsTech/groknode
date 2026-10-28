@@ -12,14 +12,14 @@ essential change forced by current Grok Bot builds (see below).
 ## How it works
 
 ```
- grokbotd (Go)                     stock Electron (BYO, run_as_node enabled)
+ groknode (Go)                     stock Electron (BYO, run_as_node enabled)
    | mints credentials (api2.cursor.sh)        |
    | writes descriptor  -------------------->  | runs vendor dist/local-exec-daemon/main.cjs
    | Node-IPC bootstrap (socketpair, fd3) ---> | (ELECTRON_RUN_AS_NODE=1, headless)
    | heartbeat + renew + restart               |
 ```
 
-grokbotd authenticates (PKCE browser-link), registers a machine identity, mints
+groknode authenticates (PKCE browser-link), registers a machine identity, mints
 the daemon + user-computer credentials, launches the vendor daemon under an
 ABI-matched Electron runtime, bootstraps it over Node IPC, and supervises it.
 
@@ -44,7 +44,7 @@ investigation and `PLAN.md` for the design.
   compatibility detection (asar version read, required-Electron-major scan,
   runtime discovery), Node-IPC transport, headless daemon launch, checksum and
   protocol client (vs a fake backend).
-- **End-to-end flow ready:** once Grok Bot is on disk, `grokbotctl fetch-runtime` →
+- **End-to-end flow ready:** once Grok Bot is on disk, `groknode fetch-runtime` →
   `login` → `policy` → `systemctl start grokbot-node` should work with a real
   account on an always-on LXC/VM.
 
@@ -53,7 +53,7 @@ investigation and `PLAN.md` for the design.
 ```
 go build ./...
 go test ./...            # unit + guarded real-install tests
-go build -o grokbotd ./cmd/grokbotd
+make build               # produces ./groknode
 ```
 
 ## Install as a system service
@@ -75,13 +75,19 @@ The installer auto-detects your distro and architecture, then:
 - Installs all required Electron runtime libraries (no display server needed)
 - Configures the systemd service
 
+The installer puts a single command on your `$PATH` — **`groknode`** — which
+runs everything as the dedicated service user with the right environment. (The
+daemon binary itself lives in `/usr/local/libexec/grokbot-node/` and is invoked
+only by systemd; you never call it directly. The vendor's own `grok-bot` binary
+is separate and unrelated to this project.)
+
 After install, continue with:
 
 ```
-grokbotctl fetch-runtime             # download matching stock Electron
-grokbotctl check --local             # verify compatibility
-grokbotctl login                     # browser-link sign-in (prints URL)
-grokbotctl policy ask                # always | ask | never
+groknode fetch-runtime               # download matching stock Electron
+groknode check --local               # verify compatibility
+groknode login                       # browser-link sign-in (prints URL)
+groknode policy ask                  # always | ask | never
 sudo systemctl start grokbot-node
 ```
 
@@ -90,9 +96,11 @@ sudo systemctl start grokbot-node
 - Fedora/RHEL (x64, arm64) — `.rpm` packages  
 - Arch/CachyOS/Manjaro (x64, arm64) — AppImage
 
-After any Grok Bot update: `grokbotctl fetch-runtime && sudo systemctl restart grokbot-node`.
+After any Grok Bot update: `groknode fetch-runtime && sudo systemctl restart grokbot-node`.
 
 ## Commands
+
+All commands are subcommands of `groknode` (e.g. `groknode status`):
 
 | Command | Purpose |
 |---------|---------|
