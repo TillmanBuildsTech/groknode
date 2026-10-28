@@ -12,9 +12,9 @@ Type=simple
 User=grokbot
 Group=grokbot
 EnvironmentFile=/etc/grokbot-node/environment
-# Start the daemon. Pre-flight checks (grokbotd check --local) are manual
+# Start the daemon. Pre-flight checks (groknode check --local) are manual
 # for diagnosing issues; the service itself gates on credential existence.
-ExecStart=/usr/local/bin/grokbotd run
+ExecStart=/usr/local/libexec/grokbot-node/groknode run
 Restart=on-failure
 RestartSec=5s
 TimeoutStopSec=15s

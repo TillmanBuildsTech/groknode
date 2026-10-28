@@ -1,4 +1,4 @@
-// Command grokbotd is the headless Grok Bot local-computer node controller.
+// Command groknode is the headless Grok Bot local-computer node controller.
 package main
 
 import (
@@ -54,13 +54,13 @@ func main() {
 		os.Exit(2)
 	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "grokbotd: %v\n", err)
+		fmt.Fprintf(os.Stderr, "groknode: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func usage() {
-	fmt.Fprint(os.Stderr, `grokbotd <command>
+	fmt.Fprint(os.Stderr, `groknode <command>
 
   login              Browser-link sign-in; stores account credentials.
   run                Supervise the local-exec daemon (service entrypoint).
@@ -165,7 +165,7 @@ func cmdCheck(args []string) error {
 	local := false
 	if len(args) > 0 {
 		if args[0] != "--local" {
-			return fmt.Errorf("usage: grokbotd check [--local]")
+			return fmt.Errorf("usage: groknode check [--local]")
 		}
 		local = true
 	}
@@ -243,7 +243,7 @@ func cmdCheck(args []string) error {
 
 func cmdPolicy(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("usage: grokbotd policy <always|ask|never>")
+		return fmt.Errorf("usage: groknode policy <always|ask|never>")
 	}
 	value := args[0]
 	switch value {
@@ -347,7 +347,7 @@ func cmdFetchRuntime() error {
 
 func cmdChecksum(args []string) {
 	if len(args) != 1 {
-		fmt.Fprintln(os.Stderr, "usage: grokbotd checksum <machineId>")
+		fmt.Fprintln(os.Stderr, "usage: groknode checksum <machineId>")
 		os.Exit(2)
 	}
 	fmt.Println(protocol.ChecksumNow(args[0]))
@@ -413,7 +413,7 @@ func orStr(v any, def string) string {
 // desktop session.
 func cmdDaemonProbe(args []string) {
 	if len(args) < 4 {
-		fmt.Fprintln(os.Stderr, "usage: grokbotd daemon-probe <runtime-binary> <daemon.cjs> <clientVersion> <seconds>")
+		fmt.Fprintln(os.Stderr, "usage: groknode daemon-probe <runtime-binary> <daemon.cjs> <clientVersion> <seconds>")
 		os.Exit(2)
 	}
 	runtime, script, version := args[0], args[1], args[2]
@@ -422,7 +422,7 @@ func cmdDaemonProbe(args []string) {
 		fmt.Fprintf(os.Stderr, "bad seconds: %v\n", err)
 		os.Exit(2)
 	}
-	dataRoot, err := os.MkdirTemp("", "grokbotd-probe-*")
+	dataRoot, err := os.MkdirTemp("", "groknode-probe-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mkdtemp: %v\n", err)
 		os.Exit(1)
@@ -500,7 +500,7 @@ func (w *linePrefixer) Write(p []byte) (int, error) {
 
 func cmdIPCProbe(args []string) {
 	if len(args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: grokbotd ipc-probe <runtime-binary> <script> [--run-as-node]")
+		fmt.Fprintln(os.Stderr, "usage: groknode ipc-probe <runtime-binary> <script> [--run-as-node]")
 		os.Exit(2)
 	}
 	runtime, script := args[0], args[1]

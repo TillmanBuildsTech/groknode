@@ -16,8 +16,9 @@ svc_user="grokbot"
 state_dir="/var/lib/grokbot-node"
 conf_dir="/etc/grokbot-node"
 unit_dst="/etc/systemd/system/grokbot-node.service"
-bin_dst="/usr/local/bin/grokbotd"
-ctl_dst="/usr/local/bin/grokbotctl"
+libexec_dir="/usr/local/libexec/grokbot-node"
+bin_dst="$libexec_dir/groknode"     # daemon binary, OFF $PATH (systemd calls it directly)
+cli_dst="/usr/local/bin/groknode"   # the one command users type
 
 # Parse flags
 if [[ "$bin_src" == "--with-grokbot" ]]; then
@@ -219,11 +220,11 @@ install_grokbot_libs() {
 # 1. Obtain the binary.
 if [[ -z "$bin_src" ]]; then
   if command -v go >/dev/null 2>&1; then
-    echo "Building grokbotd..."
-    ( cd "$repo_dir" && CGO_ENABLED=0 go build -o /tmp/grokbotd ./cmd/grokbotd )
-    bin_src=/tmp/grokbotd
+    echo "Building groknode..."
+    ( cd "$repo_dir" && CGO_ENABLED=0 go build -o /tmp/groknode ./cmd/groknode )
+    bin_src=/tmp/groknode
   else
-    echo "No binary given and 'go' not found. Pass a prebuilt grokbotd path." >&2
+    echo "No binary given and 'go' not found. Pass a prebuilt groknode path." >&2
     exit 1
   fi
 fi
@@ -249,6 +250,9 @@ install -d -m 0750 -o root -g "$svc_user" "$conf_dir"
 install -d -m 0700 -o "$svc_user" -g "$svc_user" "$state_dir"
 
 # 5. Binary + env file + unit.
+# Remove binaries from any pre-rename install (old grokbotd/grokbotctl on $PATH).
+rm -f /usr/local/bin/grokbotd /usr/local/bin/grokbotctl
+install -d -m 0755 "$libexec_dir"
 install -m 0755 "$bin_src" "$bin_dst"
 cat > "$conf_dir/environment" <<EOF
 GROKBOT_CONFIG_DIR=$state_dir/.config/grokbot-node
@@ -262,21 +266,22 @@ chmod 0640 "$conf_dir/environment"
 chown root:"$svc_user" "$conf_dir/environment"
 install -m 0644 "$repo_dir/packaging/systemd/grokbot-node.service" "$unit_dst"
 
-# 6. Admin wrapper so you can run CLI commands as the service user with its env.
-cat > "$ctl_dst" <<'WRAPPER_EOF'
+# 6. The single user-facing command. Runs the daemon binary as the service
+# user with the service environment, so state lands in the grokbot-owned dirs.
+cat > "$cli_dst" <<'WRAPPER_EOF'
 #!/usr/bin/env bash
-# Run grokbotd as the service user with the service environment.
+# groknode: manage the headless Grok Bot node (runs as the service user).
 set -a; . /etc/grokbot-node/environment; set +a
 if [[ $EUID -eq 0 ]]; then
   # Already root: run as the service user with environment
   export HOME=/var/lib/grokbot-node
-  exec su -s /bin/bash - grokbot -c "/usr/local/bin/grokbotd $(printf '%q ' "$@")"
+  exec su -s /bin/bash - grokbot -c "/usr/local/libexec/grokbot-node/groknode $(printf '%q ' "$@")"
 else
   # Not root: escalate with sudo
-  exec sudo -E -u grokbot /usr/local/bin/grokbotd "$@"
+  exec sudo -E -u grokbot /usr/local/libexec/grokbot-node/groknode "$@"
 fi
 WRAPPER_EOF
-chmod 0755 "$ctl_dst"
+chmod 0755 "$cli_dst"
 
 # 7. Shared-library preflight. Electron links GTK/X11/NSS at load even in
 # run_as_node mode; a slim server/LXC may lack them. No display server needed.
@@ -302,7 +307,7 @@ preflight_libs() {
     echo "  Arch:          sudo pacman -S --needed gtk3 nss atk at-spi2-atk at-spi2-core \\"
     echo "                   mesa alsa-lib libxkbcommon libdrm libcups pango cairo libx11 \\"
     echo "                   libxcomposite libxdamage libxrandr libxtst libxfixes"
-    echo "('grokbotctl check --local' re-checks this after fetch-runtime.)"
+    echo "('groknode check --local' re-checks this after fetch-runtime.)"
   fi
 }
 preflight_libs
@@ -316,11 +321,11 @@ Installed grokbot-node.
 
 Next steps (run on this box):
   1. Verify Grok Bot is installed and available.
-  2. grokbotctl fetch-runtime     # download the matching stock Electron
-  3. grokbotctl check --local     # verify compatibility
-  4. grokbotctl login             # browser-link sign-in (prints a URL)
-  5. grokbotctl policy ask        # or: always | never
+  2. groknode fetch-runtime     # download the matching stock Electron
+  3. groknode check --local     # verify compatibility
+  4. groknode login             # browser-link sign-in (prints a URL)
+  5. groknode policy ask        # or: always | never
   6. systemctl start grokbot-node
 
-After any Grok Bot update, re-run:  grokbotctl fetch-runtime && systemctl restart grokbot-node
+After any Grok Bot update, re-run:  groknode fetch-runtime && systemctl restart grokbot-node
 EOF

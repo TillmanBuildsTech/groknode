@@ -72,7 +72,7 @@ func LoadCredentials(path string) (Credentials, error) {
 		return Credentials{}, err
 	}
 	if !found || !c.Valid() {
-		return Credentials{}, fmt.Errorf("no valid account credentials; run: grokbotd login")
+		return Credentials{}, fmt.Errorf("no valid account credentials; run: groknode login")
 	}
 	return c, nil
 }

@@ -1,10 +1,10 @@
-BIN := grokbotd
+BIN := groknode
 GOPATH_BIN := $(shell go env GOPATH)/bin
 
 .PHONY: build vet test race lint vuln fmt ci clean
 
 build:
-	CGO_ENABLED=0 go build -o $(BIN) ./cmd/grokbotd
+	CGO_ENABLED=0 go build -o $(BIN) ./cmd/groknode
 
 vet:
 	go vet ./...
