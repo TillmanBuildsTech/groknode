@@ -52,23 +52,45 @@ echo "Detected: distro=$distro arch=$arch"
 
 # --- Grok Bot Installation -------------------------------------------------
 
+# Cursor's official stable update feed. Returns the current release's version,
+# commitSha, and direct download URLs (debUrl/rpmUrl/downloadUrl) per platform.
+#   https://api2.cursor.sh/updates/api/download/stable/{platform}/sand
+grokbot_feed_base="https://api2.cursor.sh/updates/api/download/stable"
+
+# json_str JSON KEY -> prints the string value of KEY from flat JSON (no jq).
+json_str() {
+  printf '%s' "$1" \
+    | grep -oE "\"$2\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" \
+    | head -n1 \
+    | sed -E "s/.*:[[:space:]]*\"([^\"]*)\"/\1/"
+}
+
+# Resolve the LATEST stable Grok Bot download URLs from the feed (no pinned
+# version). Echoes "deb_url|rpm_url|appimage_url" on stdout; status on stderr.
+# Override the whole lookup by exporting GROK_BOT_VERSION_FEED to a mirror,
+# or skip auto-download entirely by installing Grok Bot yourself first.
 fetch_grokbot_urls() {
   local linux_arch="$1"
-  # Known recent stable version (0.39.0) with working URLs from cursor CDN.
-  # For latest: check https://cursor.com/download/bot or https://github.com/falser101/grok-bot-linux
-  local commit="d8bc9c753edddb313047c9c69b480b7f8f321087"
-  local version="0.39.0"
-  
-  if [[ "$linux_arch" == "arm64" ]]; then
-    local deb_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/arm64/grok-bot_${version}_arm64.deb"
-    local rpm_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/arm64/grok-bot-${version}-1.aarch64.rpm"
-    local ai_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/arm64/Grok_Bot_${version}.AppImage"
-  else
-    local deb_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/x64/grok-bot_${version}_amd64.deb"
-    local rpm_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/x64/grok-bot-${version}-1.x86_64.rpm"
-    local ai_url="https://downloads.cursor.com/grokbot/stable/${commit}/linux/x64/Grok_Bot_${version}.AppImage"
+  if [[ "$linux_arch" != "x64" && "$linux_arch" != "arm64" ]]; then
+    echo "Unsupported architecture for auto-download: $linux_arch" >&2
+    return 1
   fi
-  
+  local feed json
+  feed="${GROK_BOT_VERSION_FEED:-$grokbot_feed_base}/linux-${linux_arch}/sand"
+  if ! json="$(curl -fsSL "$feed")"; then
+    echo "Failed to query Grok Bot release feed: $feed" >&2
+    return 1
+  fi
+  local deb_url rpm_url ai_url version
+  deb_url="$(json_str "$json" debUrl)"
+  rpm_url="$(json_str "$json" rpmUrl)"
+  ai_url="$(json_str "$json" downloadUrl)"
+  version="$(json_str "$json" version)"
+  if [[ -z "$deb_url" || -z "$rpm_url" || -z "$ai_url" ]]; then
+    echo "Could not parse download URLs from release feed ($feed)." >&2
+    return 1
+  fi
+  echo "Resolved latest stable Grok Bot v${version:-unknown} (${linux_arch})." >&2
   echo "$deb_url|$rpm_url|$ai_url"
 }
 
