@@ -2,6 +2,8 @@
 
 # groknode
 
+![groknode hero](images/Gemini_Generated_Image_fqxqt9fqxqt9fqxq.jpg)
+
 > Keep Grok's local-computer capability running 24/7 — without leaving your desktop on.
 
 - A single, self-contained Go binary

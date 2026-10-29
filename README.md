@@ -1,6 +1,6 @@
 # groknode
 
-<img width="1024" height="1024" alt="Gemini_Generated_Image_fqxqt9fqxqt9fqxq" src="https://github.com/user-attachments/assets/70efe815-b14c-492f-a20d-3a6f2d38705a" />
+<img width="1024" height="1024" alt="groknode hero" src="docs/images/Gemini_Generated_Image_fqxqt9fqxqt9fqxq.jpg" />
 
 
 [![CodeQL](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql)
