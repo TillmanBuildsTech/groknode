@@ -195,6 +195,9 @@ sudo systemctl status groknode
 sudo systemctl stop groknode
 journalctl -u groknode -f
 ```
+## Pics or it didn't happen
+
+<img width="1024" height="1024" alt="groknode proof" src="docs/images/grokbot-connection-confirmed.png" />
 
 ## Keeping it current
 
