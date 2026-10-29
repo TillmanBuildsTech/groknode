@@ -1,5 +1,7 @@
 # groknode
 
+[![CodeQL](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql)
+
 **Keep Grok's local-computer capability running 24/7 — without leaving your desktop on.**
 
 groknode is a single, self-contained Go binary that runs Grok Bot's official
