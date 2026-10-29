@@ -17,7 +17,7 @@ var electronVerRe = regexp.MustCompile(`Electron/(\d+)\.(\d+)\.(\d+)`)
 // "Electron/<major>.<minor>.<patch>" version string and returns the major. We
 // cannot ask the binary directly because run_as_node is fused off.
 func RequiredElectronMajor(appBinary string) (int, error) {
-	f, err := os.Open(appBinary)
+	f, err := os.Open(appBinary) // #nosec G304 -- appBinary is the config-controlled vendor binary path, not external input
 	if err != nil {
 		return 0, fmt.Errorf("open vendor binary: %w", err)
 	}
@@ -56,7 +56,7 @@ func RequiredElectronMajor(appBinary string) (int, error) {
 // RequiredElectronVersion scans the vendor binary for its full embedded
 // "Electron/<major>.<minor>.<patch>" version string.
 func RequiredElectronVersion(appBinary string) (string, error) {
-	f, err := os.Open(appBinary)
+	f, err := os.Open(appBinary) // #nosec G304 -- appBinary is the config-controlled vendor binary path, not external input
 	if err != nil {
 		return "", fmt.Errorf("open vendor binary: %w", err)
 	}

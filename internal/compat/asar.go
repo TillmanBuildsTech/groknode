@@ -32,7 +32,7 @@ type asarHeader struct {
 //
 // The file data region begins at 8 + headerSize (4-byte aligned).
 func openAsar(path string) (asarHeader, int64, []byte, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is the config-controlled vendor asar location, not external input
 	if err != nil {
 		return asarHeader{}, 0, nil, fmt.Errorf("read asar: %w", err)
 	}

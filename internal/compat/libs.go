@@ -20,7 +20,7 @@ func MissingSharedLibs(binary string) []string {
 		return nil
 	}
 	// ldd exits non-zero when libs are missing; we still want its stdout.
-	out, _ := exec.Command(ldd, binary).CombinedOutput()
+	out, _ := exec.Command(ldd, binary).CombinedOutput() // #nosec G204 -- ldd is resolved from PATH; binary is a config-controlled runtime path, not external input
 	seen := map[string]bool{}
 	for _, m := range lddNotFoundRe.FindAllStringSubmatch(string(out), -1) {
 		seen[m[1]] = true

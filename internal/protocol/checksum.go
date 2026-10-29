@@ -15,7 +15,7 @@ import (
 // shift count mod 32; the trailing `& 0xff` makes logical-vs-arithmetic shift
 // irrelevant for the resulting byte.
 func Checksum(machineID string, nowMs int64) string {
-	e := uint32(nowMs / 1_000_000)
+	e := uint32(nowMs / 1_000_000) // #nosec G115 -- intentional 32-bit truncation to match JS int32 coercion (see doc comment)
 	shift := func(n uint) byte { return byte((e >> (n % 32)) & 0xff) }
 	b := []byte{shift(40), shift(32), shift(24), shift(16), shift(8), shift(0)}
 	prev := byte(165)

@@ -1,0 +1,91 @@
+# GoReleaser configuration for groknode.
+# Builds static, headless Linux binaries and publishes them to GitHub Releases
+# with checksums. Each archive bundles the installer and systemd unit so a
+# single download can set up the service.
+#
+# Validate:  goreleaser check
+# Dry run:   goreleaser release --snapshot --clean --skip=publish
+version: 2
+
+project_name: groknode
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: groknode
+    main: ./cmd/groknode
+    binary: groknode
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .CommitDate }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: groknode
+    ids:
+      - groknode
+    # groknode_0.1.0_linux_x64.tar.gz  (maps amd64->x64, arm64->arm64 to match install.sh)
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_
+      {{- if eq .Arch "amd64" }}x64
+      {{- else }}{{ .Arch }}{{ end }}
+    formats:
+      - tar.gz
+    files:
+      - src: scripts/install.sh
+        dst: scripts/install.sh
+      - src: packaging/systemd/groknode.service
+        dst: packaging/systemd/groknode.service
+      - README.md
+      - LICENSE
+      - SECURITY.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
+
+release:
+  github:
+    owner: TillmanBuildsTech
+    name: groknode
+  draft: false
+  prerelease: auto
+  name_template: "groknode {{ .Tag }}"
+  footer: |
+    ## Install
+
+    One-line install (Linux, downloads the right binary for your architecture):
+
+    ```sh
+    curl -fsSL https://raw.githubusercontent.com/TillmanBuildsTech/groknode/main/scripts/get.sh | sudo bash
+    ```
+
+    Or grab a `tar.gz` below, verify it against `checksums.txt`, extract, and run
+    `sudo ./scripts/install.sh ./groknode`. See the README for details.
