@@ -5,7 +5,6 @@ Wants=network-online.target
 After=network-online.target
 # Refuse to start until credentials exist and the runtime is compatible.
 ConditionPathExists=/var/lib/groknode/.config/groknode/credentials.json
-StateDirectory=groknode
 
 [Service]
 Type=simple
