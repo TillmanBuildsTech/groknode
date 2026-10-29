@@ -1,7 +1,8 @@
 # groknode
 
-<img width="1024" height="1024" alt="groknode hero" src="docs/images/Gemini_Generated_Image_fqxqt9fqxqt9fqxq.jpg" />
+<!-- <img width="1024" height="1024" alt="groknode hero" src="docs/images/groknode.jpg" /> -->
 
+![groknode hero]('docs/images/groknode.jpg')
 
 [![CodeQL](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql)
 [![Release](https://img.shields.io/github/v/release/TillmanBuildsTech/groknode?sort=semver)](https://github.com/TillmanBuildsTech/groknode/releases/latest)
