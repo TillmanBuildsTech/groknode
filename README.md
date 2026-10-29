@@ -14,6 +14,8 @@ awake with the app open.
 It is an independent, unofficial management layer. It ships **no proprietary
 code**, drives xAI's own daemon, and is MIT-licensed and fully open source.
 
+📖 **User documentation:** https://tillmanbuildstech.github.io/groknode/
+
 ---
 
 ## Why you'd want this

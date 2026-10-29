@@ -1,0 +1,26 @@
+{
+  "name": "groknode-docs",
+  "version": "0.1.0",
+  "description": "groknodes documentation site",
+  "keywords": [
+    "grok",
+    "grokbot",
+    "groknode"
+  ],
+  "homepage": "https://github.com/TillmanBuildsTech/groknode#readme",
+  "bugs": {
+    "url": "https://github.com/TillmanBuildsTech/groknode/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TillmanBuildsTech/groknode.git"
+  },
+  "license": "MIT",
+  "author": "Brandon Tillman",
+  "type": "commonjs",
+  "main": "index.html",
+  "scripts": {
+    "serve": "docsify serve . --port 4321",
+    "start": "docsify serve . --port 4321"
+  }
+}
