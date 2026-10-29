@@ -295,11 +295,14 @@ cat > "$cli_dst" <<'WRAPPER_EOF'
 # groknode: manage the headless Grok Bot node (runs as the service user).
 set -a; . /etc/groknode/environment; set +a
 if [[ $EUID -eq 0 ]]; then
-  # Already root: run as the service user with environment
-  export HOME=/var/lib/groknode
-  exec su -s /bin/bash - grokbot -c "/usr/local/libexec/groknode/groknode $(printf '%q ' "$@")"
+  # Already root: run as the service user, preserving the sourced environment.
+  # NOTE: a login shell (su -) would RESET the environment, dropping
+  # GROKBOT_CONFIG_DIR/GROKBOT_DATA_ROOT and silently sending state to the
+  # wrong paths on upgrades. Non-login su keeps them (and still sets HOME to
+  # the service user's home).
+  exec su -s /bin/bash grokbot -c "/usr/local/libexec/groknode/groknode $(printf '%q ' "$@")"
 else
-  # Not root: escalate with sudo
+  # Not root: escalate with sudo, preserving the environment (-E).
   exec sudo -E -u grokbot /usr/local/libexec/groknode/groknode "$@"
 fi
 WRAPPER_EOF
