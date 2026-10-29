@@ -1,5 +1,3 @@
-# groknode
-
 <img width="1024" height="1024" alt="groknode hero" src="docs/images/groknode.jpg" />
 
 [![CodeQL](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql)
