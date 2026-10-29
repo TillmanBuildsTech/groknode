@@ -22,6 +22,13 @@ import (
 	"github.com/TillmanBuildsTech/groknode/internal/supervisor"
 )
 
+// Build metadata, injected at release time via -ldflags "-X main.version=...".
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -29,6 +36,9 @@ func main() {
 	}
 	var err error
 	switch os.Args[1] {
+	case "version", "--version", "-v":
+		fmt.Printf("groknode %s (commit %s, built %s)\n", version, commit, date)
+		return
 	case "login":
 		err = cmdLogin()
 	case "run":
@@ -68,6 +78,7 @@ func usage() {
   check [--local]    Compatibility check; --local skips cloud auth.
   policy <value>     Set local tool permission: always|ask|never.
   logout             Remove credentials and local state.
+  version            Print version, commit, and build date.
 
   (diagnostics)
   checksum <machineId>

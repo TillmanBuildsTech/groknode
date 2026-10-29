@@ -39,7 +39,7 @@ func WriteJSON(path string, v any) error {
 
 // ReadJSON reads path into v. Returns (false, nil) if the file does not exist.
 func ReadJSON(path string, v any) (found bool, err error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is a config-derived state file location, not external input
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return false, nil
