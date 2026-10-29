@@ -1,5 +1,8 @@
 # groknode
 
+<img width="1024" height="1024" alt="Gemini_Generated_Image_fqxqt9fqxqt9fqxq" src="https://github.com/user-attachments/assets/70efe815-b14c-492f-a20d-3a6f2d38705a" />
+
+
 [![CodeQL](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/TillmanBuildsTech/groknode/actions/workflows/github-code-scanning/codeql)
 [![Release](https://img.shields.io/github/v/release/TillmanBuildsTech/groknode?sort=semver)](https://github.com/TillmanBuildsTech/groknode/releases/latest)
 
