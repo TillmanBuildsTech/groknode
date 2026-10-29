@@ -84,12 +84,14 @@ func unzip(zipPath string, size int64, dest string) error {
 	if err != nil {
 		return fmt.Errorf("open zip: %w", err)
 	}
+	// Zip-slip guard prefix: every extracted path must live under dest/.
+	cleanDest := filepath.Clean(dest) + string(os.PathSeparator)
 	var total int64
 	for _, zf := range zr.File {
-		// Zip-slip guard: the resolved path must stay within dest.
-		target := filepath.Join(dest, zf.Name) // #nosec G305 -- validated to stay within dest immediately below
-		rel, err := filepath.Rel(dest, target)
-		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		// filepath.Join cleans the result, collapsing any "../" in zf.Name;
+		// a resolved path that escapes dest will not keep the cleanDest prefix.
+		target := filepath.Join(dest, zf.Name) // #nosec G305 -- validated against cleanDest immediately below
+		if !strings.HasPrefix(target, cleanDest) {
 			return fmt.Errorf("unsafe zip path: %s", zf.Name)
 		}
 		if zf.FileInfo().IsDir() {
