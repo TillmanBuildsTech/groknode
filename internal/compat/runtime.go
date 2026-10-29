@@ -89,11 +89,19 @@ func RequiredElectronVersion(appBinary string) (string, error) {
 	return "", fmt.Errorf("no Electron version string found in %s", appBinary)
 }
 
-// ElectronMajorOf runs `<electron> --version` and parses the major version.
+// ElectronMajorOf returns the major version of a stock Electron binary.
+//
+// It queries the version in Node mode (ELECTRON_RUN_AS_NODE) rather than via
+// `electron --version`: the latter spins up Chromium, which aborts with
+// SIGTRAP in a headless/sandboxless environment or when running as root
+// ("Running as root without --no-sandbox is not supported"). Node mode does no
+// Chromium init, so it works everywhere the daemon itself runs.
 func ElectronMajorOf(electron string) (int, error) {
-	out, err := exec.Command(electron, "--version").Output()
+	cmd := exec.Command(electron, "-e", "process.stdout.write(process.versions.electron)")
+	cmd.Env = append(os.Environ(), "ELECTRON_RUN_AS_NODE=1")
+	out, err := cmd.Output()
 	if err != nil {
-		return 0, fmt.Errorf("%s --version: %w", electron, err)
+		return 0, fmt.Errorf("%s version probe: %w", electron, err)
 	}
 	v := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(out)), "v"))
 	parts := strings.SplitN(v, ".", 2)
