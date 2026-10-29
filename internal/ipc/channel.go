@@ -49,7 +49,7 @@ func Spawn(opts SpawnOptions) (*Channel, error) {
 	parent := os.NewFile(uintptr(fds[0]), "ipc-parent")
 	child := os.NewFile(uintptr(fds[1]), "ipc-child")
 
-	cmd := exec.Command(opts.Path, opts.Args...)
+	cmd := exec.Command(opts.Path, opts.Args...) // #nosec G204 -- launching the configured runtime is this function's purpose; Path/Args come from trusted config, not external input
 	cmd.Env = append(os.Environ(), opts.Env...)
 	// fd 3 (first ExtraFiles entry) is the IPC channel in the child.
 	cmd.Env = append(cmd.Env,

@@ -7,7 +7,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+)
+
+// Extraction bounds, guarding against decompression bombs. A stock Electron
+// linux zip is a few hundred MB; these caps are generous but finite.
+const (
+	maxFileBytes  = 1 << 30 // 1 GiB per entry
+	maxTotalBytes = 4 << 30 // 4 GiB across the whole archive
 )
 
 // ElectronReleaseURL returns the official stock Electron linux-x64 zip URL for a
@@ -25,7 +33,7 @@ func FetchElectron(version string, major int, cacheDir string) (string, error) {
 	if _, err := os.Stat(bin); err == nil {
 		return bin, nil // already present
 	}
-	if err := os.MkdirAll(dest, 0o755); err != nil {
+	if err := os.MkdirAll(dest, 0o750); err != nil {
 		return "", err
 	}
 
@@ -59,14 +67,15 @@ func FetchElectron(version string, major int, cacheDir string) (string, error) {
 	if _, err := os.Stat(bin); err != nil {
 		return "", fmt.Errorf("electron binary missing after extract: %w", err)
 	}
-	if err := os.Chmod(bin, 0o755); err != nil {
+	// The electron binary must be executable; 0o750 keeps it off world access.
+	if err := os.Chmod(bin, 0o750); err != nil { // #nosec G302 -- runtime binary must carry the exec bit
 		return "", err
 	}
 	return bin, nil
 }
 
 func unzip(zipPath string, size int64, dest string) error {
-	f, err := os.Open(zipPath)
+	f, err := os.Open(zipPath) // #nosec G304 -- zipPath is our own temp file created above
 	if err != nil {
 		return err
 	}
@@ -75,43 +84,65 @@ func unzip(zipPath string, size int64, dest string) error {
 	if err != nil {
 		return fmt.Errorf("open zip: %w", err)
 	}
+	var total int64
 	for _, zf := range zr.File {
-		target := filepath.Join(dest, zf.Name) //nolint:gosec // dest is ours; see guard below
-		// Zip-slip guard.
-		if rel, err := filepath.Rel(dest, target); err != nil || len(rel) >= 2 && rel[0] == '.' && rel[1] == '.' {
+		// Zip-slip guard: the resolved path must stay within dest.
+		target := filepath.Join(dest, zf.Name) // #nosec G305 -- validated to stay within dest immediately below
+		rel, err := filepath.Rel(dest, target)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
 			return fmt.Errorf("unsafe zip path: %s", zf.Name)
 		}
 		if zf.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, 0o755); err != nil {
+			if err := os.MkdirAll(target, 0o750); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
 			return err
 		}
-		rc, err := zf.Open()
+		n, err := extractFile(zf, target)
 		if err != nil {
 			return err
 		}
-		mode := zf.Mode()
-		if mode == 0 {
-			mode = 0o644
-		}
-		out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
-		if err != nil {
-			_ = rc.Close()
-			return err
-		}
-		if _, err := io.Copy(out, rc); err != nil { //nolint:gosec // trusted vendor release
-			_ = rc.Close()
-			_ = out.Close()
-			return err
-		}
-		_ = rc.Close()
-		if err := out.Close(); err != nil {
-			return err
+		total += n
+		if total > maxTotalBytes {
+			return fmt.Errorf("archive exceeds %d bytes; refusing to extract", maxTotalBytes)
 		}
 	}
 	return nil
+}
+
+// extractFile writes a single zip entry to target, bounded by maxFileBytes, and
+// returns the number of bytes written.
+func extractFile(zf *zip.File, target string) (int64, error) {
+	rc, err := zf.Open()
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = rc.Close() }()
+
+	// Drop setuid/setgid/sticky and world/group-write bits from the archived
+	// mode; keep the exec bit so Electron's helper binaries stay runnable.
+	mode := zf.Mode().Perm() & 0o755
+	if mode == 0 {
+		mode = 0o644
+	}
+	out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode) // #nosec G304 -- target is validated against dest by the zip-slip guard
+	if err != nil {
+		return 0, err
+	}
+	// Bound the copy so a crafted entry cannot exhaust disk (decompression bomb).
+	n, err := io.Copy(out, io.LimitReader(rc, maxFileBytes+1))
+	if err != nil {
+		_ = out.Close()
+		return 0, err
+	}
+	if err := out.Close(); err != nil {
+		return 0, err
+	}
+	if n > maxFileBytes {
+		return 0, fmt.Errorf("zip entry %s exceeds %d bytes; refusing to extract", zf.Name, maxFileBytes)
+	}
+	return n, nil
 }
