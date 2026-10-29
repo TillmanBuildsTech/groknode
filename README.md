@@ -1,124 +1,215 @@
 # groknode
 
-A single-binary Go controller that runs the official Grok Bot local-computer
-daemon headlessly on an always-on Linux box — so the capability keeps working
-when your desktop is off. It is an independent, unofficial management layer; it
-ships no proprietary code and drives xAI's own daemon over its internal protocol.
+**Keep Grok's local-computer capability running 24/7 — without leaving your desktop on.**
 
-A native Go implementation of a local-computer controller with support for
-current Grok Bot builds (see below).
+groknode is a single, self-contained Go binary that runs Grok Bot's official
+local-computer daemon headlessly on an always-on Linux box (a VM, an LXC, a
+home server, a Raspberry Pi). Install it once, sign in, and Grok can keep
+working on your machine whenever you need it — not just while your laptop is
+awake with the app open.
 
-## How it works
+It is an independent, unofficial management layer. It ships **no proprietary
+code**, drives xAI's own daemon, and is MIT-licensed and fully open source.
+
+---
+
+## Why you'd want this
+
+Grok Bot's "local computer" feature lets Grok run commands and work with files
+on a machine you control. Out of the box, that machine has to be *your
+desktop*, with the Grok Bot app open and your screen on. Close the laptop and
+the capability goes away.
+
+groknode moves that capability onto a box that's always on:
+
+- **Always available.** Grok's local-computer tasks keep working whether or not
+  your desktop is awake. Run it on a cheap VM or an LXC and forget about it.
+- **No desktop, no display server.** Runs completely headless — no X11, no
+  Xvfb, no GUI. Just the binary and a systemd service.
+- **One command to install.** The installer detects your distro and
+  architecture, pulls the latest official Grok Bot release, installs every
+  runtime library it needs, and wires up a hardened system service.
+- **Set-and-forget supervision.** It signs in, mints and renews credentials
+  automatically, launches the daemon, watches it, and restarts it with
+  back-off if it ever crashes.
+- **Runs locked down.** A dedicated, no-login service user; credentials stored
+  at `0600`; a hardened systemd unit; outbound connections only — no inbound
+  listener.
+
+---
+
+## Can you trust it?
+
+That's the right question to ask of anything that can run commands on your
+machine. Here's the honest answer:
+
+- **It's fully open source (MIT).** Every line that runs as groknode is in this
+  repository. Read it, audit it, build it yourself.
+- **It redistributes no proprietary code.** The actual local-computer daemon is
+  xAI's, and it comes only from the official Grok Bot package you install on
+  your own box. groknode never bundles, ships, or modifies it — it only
+  supervises it.
+- **Your data goes exactly where it already did.** groknode talks to the same
+  xAI/Cursor cloud endpoints the official app uses, with the same account. It
+  adds no telemetry and no third parties. The data that flows to xAI is the
+  same data that flows when you use the official app.
+- **It's locked down by default.** The service runs as a dedicated `grokbot`
+  user with no login shell, under a hardened systemd unit (`NoNewPrivileges`,
+  `ProtectSystem=strict`, `ProtectHome`, a scoped `ReadWritePaths` sandbox, and
+  an empty capability set). Grok's tasks can only touch directories you
+  explicitly grant.
+- **It warns you before it breaks.** This relies on an internal protocol that a
+  vendor update could change. A nightly automated check downloads the current
+  Grok Bot release and verifies everything groknode depends on — so breakage
+  gets caught and tracked *before* it reaches you.
+
+It is **unofficial** and **not endorsed by xAI or Cursor**. Because it rides an
+undocumented internal protocol, a future Grok Bot update can break it until
+groknode is updated to match. That's the one real caveat, and the nightly
+watch exists specifically to manage it.
+
+---
+
+## Supported platforms
+
+| Family | Architectures | Package |
+|--------|---------------|---------|
+| Debian / Ubuntu | x64, arm64 | `.deb` |
+| Fedora / RHEL / CentOS | x64, arm64 | `.rpm` |
+| Arch / CachyOS / Manjaro | x64, arm64 | AppImage |
+
+No display server is required on any of them — only the shared libraries the
+runtime links at load, which the installer handles for you.
+
+---
+
+## Install
+
+You need a Linux box that stays on and an xAI account with Grok Bot access.
+
+### Full install (recommended)
+
+Downloads and installs Grok Bot plus every runtime library, then sets up the
+service:
 
 ```
- groknode (Go)                     stock Electron (BYO, run_as_node enabled)
-   | mints credentials (api2.cursor.sh)        |
-   | writes descriptor  -------------------->  | runs vendor dist/local-exec-daemon/main.cjs
-   | Node-IPC bootstrap (socketpair, fd3) ---> | (ELECTRON_RUN_AS_NODE=1, headless)
-   | heartbeat + renew + restart               |
+sudo ./scripts/install.sh --with-grokbot
 ```
 
-groknode authenticates (PKCE browser-link), registers a machine identity, mints
-the daemon + user-computer credentials, launches the vendor daemon under an
-ABI-matched Electron runtime, bootstraps it over Node IPC, and supervises it.
+### Minimal install
 
-## The key constraint (why we bring our own Electron)
-
-The official desktop binary (`/opt/Grok Bot/grok-bot`) on current builds (0.75.8)
-has the Electron **`run_as_node` fuse DISABLED**, so `ELECTRON_RUN_AS_NODE=1`
-is ignored and it cannot be used as a Node runtime — the approach the original
-project relied on. Instead we run the vendor's daemon code under a **stock
-Electron of the same major version** (stock Electron ships `run_as_node`
-enabled; same major = same Node ABI, so it loads the vendor's prebuilt native
-modules). The official package is still required — it is the only source of the
-proprietary daemon — but it is never executed. See `SPIKES.md` for the full
-investigation and `PLAN.md` for the design.
-
-## Status
-
-- **Installer: fully tested** on Debian, auto-downloads the latest stable Grok
-  Bot from Cursor's official update feed, installs all Electron runtime libs,
-  configures systemd service, handles missing dependencies automatically.
-- **Controller MVP: validated** against the real 0.75.8 install on Linux/Arch:
-  compatibility detection (asar version read, required-Electron-major scan,
-  runtime discovery), Node-IPC transport, headless daemon launch, checksum and
-  protocol client (vs a fake backend).
-- **End-to-end flow ready:** once Grok Bot is on disk, `groknode fetch-runtime` →
-  `login` → `policy` → `systemctl start groknode` should work with a real
-  account on an always-on LXC/VM.
-- **Drift watch:** a nightly GitHub Actions job (`.github/workflows/nightly.yml`)
-  downloads the current stable Grok Bot and verifies the assumptions groknode
-  relies on — package layout, the in-asar daemon entry, the embedded Electron
-  version, and that a matching stock Electron is still published. If Cursor
-  ships a breaking change, it opens a tracking issue before users hit it.
-
-## Build & test
+If Grok Bot is already present on the machine:
 
 ```
-go build ./...
-go test ./...            # unit + guarded real-install tests
-make build               # produces ./groknode
+sudo ./scripts/install.sh
 ```
 
-## Install as a system service
+The installer creates the dedicated `grokbot` service user, lays down the
+hardened systemd unit, and puts a single command on your `PATH`: **`groknode`**.
+That's the only command you ever type.
 
-### Minimal install (Grok Bot already present)
-
-```
-sudo ./scripts/install.sh            # dedicated user, hardened unit, wrapper
-```
-
-### Full install (downloads Grok Bot + all dependencies)
+### Finish setup
 
 ```
-sudo ./scripts/install.sh --with-grokbot     # download & install Grok Bot + libs
+groknode fetch-runtime          # download the matching runtime
+groknode check --local          # verify everything lines up
+groknode login                  # sign in — prints a URL to open in your browser
+groknode policy ask             # how Grok asks before acting: always | ask | never
+sudo systemctl start groknode   # go live
 ```
 
-The installer auto-detects your distro and architecture, then:
-- Resolves the latest stable release from Cursor's update feed and downloads the
-  appropriate Grok Bot package (.deb, .rpm, or AppImage)
-- Installs all required Electron runtime libraries (no display server needed)
-- Configures the systemd service
+`groknode login` prints a link; open it in any browser, approve, and you're
+signed in. `groknode policy` controls whether local-computer actions require
+your confirmation (`ask`), run freely (`always`), or are blocked (`never`).
 
-The installer puts a single command on your `$PATH` — **`groknode`** — which
-runs everything as the dedicated service user with the right environment. (The
-daemon binary itself lives in `/usr/local/libexec/groknode/` and is invoked
-only by systemd; you never call it directly. The vendor's own `grok-bot` binary
-is separate and unrelated to this project.)
+---
 
-After install, continue with:
+## Everyday use
+
+Everything is a subcommand of `groknode`:
+
+| Command | What it does |
+|---------|--------------|
+| `groknode login` | Browser sign-in; stores your credentials |
+| `groknode status` | Current node and daemon status (JSON) |
+| `groknode check [--local]` | Verify compatibility (and sign-in) |
+| `groknode policy <always\|ask\|never>` | Set how Grok is allowed to act locally |
+| `groknode fetch-runtime` | Download/refresh the matching runtime |
+| `groknode logout` | Remove credentials and local state |
+
+Start, stop, and inspect the service with systemd as usual:
 
 ```
-groknode fetch-runtime               # download matching stock Electron
-groknode check --local               # verify compatibility
-groknode login                       # browser-link sign-in (prints URL)
-groknode policy ask                  # always | ask | never
-sudo systemctl start groknode
+sudo systemctl status groknode
+sudo systemctl stop groknode
+journalctl -u groknode -f
 ```
 
-**Supported platforms:**
-- Debian/Ubuntu (x64, arm64) — `.deb` packages
-- Fedora/RHEL (x64, arm64) — `.rpm` packages  
-- Arch/CachyOS/Manjaro (x64, arm64) — AppImage
+## Keeping it current
 
-After any Grok Bot update: `groknode fetch-runtime && sudo systemctl restart groknode`.
+After any Grok Bot update, refresh the runtime and restart:
 
-## Commands
+```
+groknode fetch-runtime && sudo systemctl restart groknode
+```
 
-All commands are subcommands of `groknode` (e.g. `groknode status`):
+## Granting access to your projects
 
-| Command | Purpose |
-|---------|---------|
-| `login` | PKCE browser-link sign-in; stores credentials |
-| `run` | Supervise the daemon (service entrypoint) |
-| `status` | JSON node/daemon status |
-| `check [--local]` | Compatibility (and auth) check |
-| `policy <always\|ask\|never>` | Set local tool permission |
-| `fetch-runtime` | Download the matching stock Electron |
-| `logout` | Remove credentials/state |
-| `checksum` / `ipc-probe` / `daemon-probe` | Diagnostics |
+By default Grok's tasks run sandboxed to groknode's own state directory. To let
+Grok work in specific project folders, add those paths to `ReadWritePaths=` in
+`/etc/systemd/system/groknode.service`, then
+`sudo systemctl daemon-reload && sudo systemctl restart groknode`. Anything not
+listed stays read-only or hidden.
+
+---
+
+## How it works (in brief)
+
+groknode handles the sign-in, credential, and supervision work, and hands the
+actual local-computer execution to xAI's own daemon:
+
+1. Signs you in (browser link), registers a machine identity, and mints the
+   credentials the daemon needs — renewing them automatically before they
+   expire.
+2. Launches the official daemon headlessly and connects to it over a local
+   channel.
+3. Supervises it: heartbeats, credential renewal, and crash-restart with
+   back-off, all under a hardened systemd service.
+
+The daemon itself is proprietary and comes only from the Grok Bot package on
+your machine; groknode never executes the official desktop app and never ships
+any of its code. The deeper technical details (and why a stock runtime is
+used) are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## Security
+
+- Credentials and state are written atomically at `0600`, owned by the
+  dedicated `grokbot` user, never world-readable.
+- Outbound HTTPS only. No inbound network listener.
+- Service endpoints are validated as HTTPS-only; plain-HTTP is refused unless
+  you explicitly opt in for localhost.
+- No proprietary bundles or account state are ever committed to this repo.
+
+Found a vulnerability? See [SECURITY.md](SECURITY.md) — please report privately
+rather than opening a public issue.
+
+---
 
 ## Legal
 
-Independent and unofficial; not endorsed by xAI/Cursor. Uses an undocumented
-internal protocol that a vendor update can change. MIT licensed.
+groknode is an independent, unofficial project. It is **not affiliated with,
+endorsed by, or supported by xAI or Cursor.** It uses an undocumented internal
+protocol that a vendor update can change at any time. No proprietary code is
+redistributed.
+
+Licensed under the [MIT License](LICENSE).
+
+---
+
+## Contributing
+
+Build instructions, architecture, the testing workflow, and the diagnostics
+tooling live in [CONTRIBUTING.md](CONTRIBUTING.md). Issues and pull requests are
+welcome.
