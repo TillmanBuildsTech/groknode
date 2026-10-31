@@ -14,6 +14,8 @@ import (
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/TillmanBuildsTech/groknode/internal/config"
 )
 
 func envOr(key, def string) string {
@@ -78,6 +80,43 @@ func TestLatestPackageStructure(t *testing.T) {
 	// 5. The core premise: a matching stock Electron of that exact version must
 	//    still be published upstream (groknode fetch-runtime downloads it).
 	assertElectronPublished(t, full)
+
+	// 6. The hardcoded OAuth client ID default must still ship inside the
+	//    vendor package. If Cursor rotates it, our refresh_token grant starts
+	//    failing; catching the drift here lets us update config.defaultClientID
+	//    before users hit broken auth.
+	assertClientIDPresent(t, appBinary, asar)
+}
+
+// assertClientIDPresent verifies the default OAuth client ID groknode uses is
+// still embedded in the shipped vendor package. The default is resolved exactly
+// as the running binary resolves it (env override cleared), so this tracks the
+// real constant rather than a duplicated literal.
+func assertClientIDPresent(t *testing.T, appBinary, asar string) {
+	t.Helper()
+	t.Setenv("SAND_AUTH_CLIENT_ID", "")
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("config.Load: %v", err)
+	}
+	id := cfg.AuthClientID
+	if id == "" {
+		t.Fatal("default AuthClientID resolved empty")
+	}
+
+	// The client ID is a string literal in the bundled JS (inside app.asar);
+	// scan the binary too as a fallback in case the vendor relocates it.
+	for _, path := range []string{asar, appBinary} {
+		ok, err := FileContains(path, id)
+		if err != nil {
+			t.Fatalf("scan %s: %v", path, err)
+		}
+		if ok {
+			t.Logf("OAuth client ID present in %s", path)
+			return
+		}
+	}
+	t.Fatalf("OAuth client ID %q not found in vendor package (asar or binary) -- Cursor may have rotated it; update config.defaultClientID", id)
 }
 
 func assertElectronPublished(t *testing.T, version string) {

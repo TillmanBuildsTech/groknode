@@ -67,6 +67,7 @@ jobs:
               "- the daemon entry `dist/local-exec-daemon/main.cjs` moved/renamed inside the asar",
               "- the embedded `Electron/x.y.z` version string changed shape (byte-scan miss)",
               "- the required stock Electron version is no longer published upstream",
+              "- the hardcoded OAuth client ID (`config.defaultClientID`) was rotated and is no longer in the package",
               "- the release feed or download URL schema changed",
               "",
               `Failed run: ${runUrl}`,

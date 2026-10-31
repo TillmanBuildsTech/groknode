@@ -138,8 +138,10 @@ See [`PLAN.md`](PLAN.md) for the phased roadmap.
 
 A nightly GitHub Actions job (`.github/workflows/nightly.yml`) downloads the
 current stable Grok Bot and verifies the assumptions groknode relies on:
-package layout, the in-asar daemon entry, the embedded Electron version, and
-that a matching stock Electron is still published. If Cursor ships a breaking
+package layout, the in-asar daemon entry, the embedded Electron version, that a
+matching stock Electron is still published, and that the hardcoded default OAuth
+client ID (`config.defaultClientID`) is still present in the shipped package. If
+Cursor ships a breaking
 change, it opens a tracking issue before users hit it. Keep this job green — it
 is the project's early-warning system.
 

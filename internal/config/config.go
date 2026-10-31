@@ -13,9 +13,12 @@ import (
 const (
 	defaultAPIURL     = "https://api2.cursor.sh"
 	defaultWebsiteURL = "https://cursor.com"
-	defaultClientID   = "KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB"
-	defaultAppBinary  = "/opt/Grok Bot/grok-bot"
-	defaultDaemon     = "/opt/Grok Bot/resources/app.asar/dist/local-exec-daemon/main.cjs"
+	// Public OAuth client ID of the upstream Grok Bot / Cursor desktop app.
+	// Not a secret — it must match the backend's registered client for the
+	// refresh_token grant to succeed. Override with SAND_AUTH_CLIENT_ID.
+	defaultClientID  = "KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB"
+	defaultAppBinary = "/opt/Grok Bot/grok-bot"
+	defaultDaemon    = "/opt/Grok Bot/resources/app.asar/dist/local-exec-daemon/main.cjs"
 )
 
 // Config holds resolved runtime configuration.

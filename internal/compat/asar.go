@@ -3,6 +3,7 @@
 package compat
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -80,6 +81,19 @@ func ReadAsarFile(asarPath, internalPath string) ([]byte, error) {
 		return nil, fmt.Errorf("file region out of range for %s", internalPath)
 	}
 	return raw[start:end], nil
+}
+
+// FileContains reports whether the raw bytes of the file at path contain
+// needle. Used by the nightly drift watch to detect when the vendor rotates an
+// embedded constant we hardcode a default for (e.g. the OAuth client ID). It
+// reads the whole file rather than decoding the asar, so it matches string
+// literals anywhere in a bundle regardless of how the archive is structured.
+func FileContains(path, needle string) (bool, error) {
+	data, err := os.ReadFile(path) // #nosec G304 -- config-controlled vendor package path, not external input
+	if err != nil {
+		return false, fmt.Errorf("read %s: %w", path, err)
+	}
+	return bytes.Contains(data, []byte(needle)), nil
 }
 
 // InstalledVersion reads the vendor app version from app.asar/package.json.
